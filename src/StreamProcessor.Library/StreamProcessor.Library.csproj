@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SlugEnt.StreamProcessor</AssemblyName>
+    <RootNamespace>SlugEnt.StreamProcessor</RootNamespace>
+    <Title>RabbitMQ Stream library for using MQ Stream Queue Types</Title>
+    <Authors>Scott Herrmann</Authors>
+    <Description>Allows C# applications to work with RabbitMQ Streaming queues.</Description>
+    <Copyright>2023 Scott Herrmann</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/SlugEnt/RabbitMQ.StreamProcessor</RepositoryUrl>
+    <PackageReleaseNotes>Alpha Development</PackageReleaseNotes>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RabbitMQ.Stream.Client" Version="1.1.1" />
+  </ItemGroup>
+
+</Project>
