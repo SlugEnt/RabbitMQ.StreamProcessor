@@ -9,7 +9,7 @@ namespace SlugEnt.StreamProcessor
         Producer _producer;
 
 
-        public StreamProducer(string name) : base(name)
+        public StreamProducer(string name) : base(name,EnumStreamType.Producer)
         {
         }
 
@@ -27,7 +27,7 @@ namespace SlugEnt.StreamProcessor
                 });
 
             // Publish the messages
-            for (var i = 0; i < 2; i++)
+            for (var i = 0; i < 20; i++)
             {
                 DateTime x = DateTime.Now;
                 string time = x.ToShortTimeString();

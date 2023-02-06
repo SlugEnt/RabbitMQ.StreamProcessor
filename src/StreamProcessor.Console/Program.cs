@@ -20,6 +20,7 @@ var loggerFactory = LoggerFactory.Create(builder => {
 Console.WriteLine("Select which Program you wish to run.");
 Console.WriteLine(" ( 1 )  sample_stream - with Defined Queue Settings.");
 Console.WriteLine(" ( 2 )  s2 - with no defined Queue Settings.");
+Console.WriteLine(" ( 3 )  s3.1MinQueue - Very small Queue size and age limits.");
 ConsoleKeyInfo key = Console.ReadKey();
 
 
@@ -38,14 +39,12 @@ switch (key.Key)
 
         // Produce
         producer = new StreamProducer(streamName);
-
-        producer.SetStreamLimitsSmall();
+        //producer.SetStreamLimitsSmall();
         await producer.ConnectAsync();
         await producer.PublishAsync();
 
         // Lets Start a Consumer
         consumer = new StreamConsumer(streamName);
-        consumer.SetStreamLimitsSmall();
         await consumer.ConnectAsync();
         consumer.SetConsumptionHandler(ConsumeMessageHandler);
         await consumer.ConsumeAsync();
@@ -55,32 +54,44 @@ switch (key.Key)
     // This enables dynamic real time changes.
     case ConsoleKey.D2:
         streamName = "s2.NoLimits";
-
-
         // Produce
         producer = new StreamProducer(streamName);
-
-        //producer.SetStreamLimits(1,1,61);
         producer.SetNoStreamLimits();
         await producer.ConnectAsync();
         await producer.PublishAsync();
 
         // Lets Start a Consumer
         consumer = new StreamConsumer(streamName);
-        consumer.SetNoStreamLimits();
-        //consumer.SetStreamLimits(1, 1, 61);
         await consumer.ConnectAsync();
         consumer.SetConsumptionHandler(ConsumeMessageHandler);
         await consumer.ConsumeAsync();
 
         deleteStream = true;        
         break;
+
+    case ConsoleKey.D3:
+        streamName = "s3.1MinQueue";
+        // Produce
+        producer = new StreamProducer(streamName);
+        producer.SetStreamLimitsRaw(10000,500,60);
+        await producer.ConnectAsync();
+        await producer.PublishAsync();
+
+        // Lets Start a Consumer
+        consumer = new StreamConsumer(streamName);
+        await consumer.ConnectAsync();
+        consumer.SetConsumptionHandler(ConsumeMessageHandler);
+        await consumer.ConsumeAsync();
+
+        deleteStream = true;
+        break;
 }
 
-Console.WriteLine("Press any key to exit the application");
-Console.ReadKey();
+Thread.Sleep(2000);
+Console.WriteLine("Press any key to exit the application.  Press D to delete the stream");
+ConsoleKeyInfo key2 = Console.ReadKey();
 
-if (deleteStream) consumer.DeleteStream();
+if ((key2.Key == ConsoleKey.D) && (deleteStream)) consumer.DeleteStream();
 
 
 /*

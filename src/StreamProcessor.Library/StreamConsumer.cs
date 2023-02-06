@@ -8,12 +8,11 @@ namespace SlugEnt.StreamProcessor
 {
     public class StreamConsumer : StreamBase
     {
-       
         private int _counter;
         private Func<string, RawConsumer, MessageContext, Message, Task> _callHandler;
 
 
-        public StreamConsumer(string name) : base(name) { }
+        public StreamConsumer(string name) : base(name, EnumStreamType.Consumer) { }
 
         public async Task ConsumeAsync()
         {
@@ -22,7 +21,7 @@ namespace SlugEnt.StreamProcessor
             if (_callHandler == null) throw new ApplicationException("Must Set the Call Handler before calling Consume method.");
 
             // Connect to the Stream
-            _streamSystem.CreateStream(_streamSpec);
+            //_streamSystem.CreateStream(_streamSpec);
 
             var consumer = await Consumer.Create(
                 new ConsumerConfig(_streamSystem, _name)
