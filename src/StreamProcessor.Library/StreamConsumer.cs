@@ -21,6 +21,9 @@ namespace SlugEnt.StreamProcessor
 
             if (_callHandler == null) throw new ApplicationException("Must Set the Call Handler before calling Consume method.");
 
+            // Connect to the Stream
+            _streamSystem.CreateStream(_streamSpec);
+
             var consumer = await Consumer.Create(
                 new ConsumerConfig(_streamSystem, _name)
                 {
