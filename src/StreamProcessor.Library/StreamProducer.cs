@@ -26,17 +26,18 @@ namespace SlugEnt.StreamProcessor
                     ConfirmationHandler = OnConfirmation
                 });
 
-            // Publish the messages
-            for (var i = 0; i < 20; i++)
-            {
-                DateTime x = DateTime.Now;
-                string time = x.ToShortTimeString();
-                string msg = String.Format("Time: {0}   -->  Msg # {1}", time, i);
-                var message = new Message(Encoding.UTF8.GetBytes(msg));
-                await _producer.Send(message);
-            }
-
         }
+
+
+
+        public async Task SendMessage(string messageAsString)
+        {
+            var message = new Message(Encoding.UTF8.GetBytes(messageAsString));
+            await _producer.Send(message);
+        }
+
+
+
         public Task OnConfirmation (MessagesConfirmation confirmation)
         {
             switch (confirmation.Status)

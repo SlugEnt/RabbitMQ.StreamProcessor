@@ -174,5 +174,10 @@ namespace SlugEnt.StreamProcessor
         {
             await _streamSystem.DeleteStream(_name);
         }
+
+        public async Task StreamInfo()
+        {
+         
+        }
     }
 }

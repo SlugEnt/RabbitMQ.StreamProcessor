@@ -7,6 +7,7 @@ using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 using SlugEnt.StreamProcessor;
 using System.Xml.Linq;
+using StreamProcessor.Console;
 
 
 Console.WriteLine("MQ Stream Sender");
@@ -34,7 +35,9 @@ switch (key.Key)
 {
     // Simple stream with defined sizes set by us.  Once set, these can never be changed for the lifetime of the Queue, not the App!
     case ConsoleKey.D1:
-        streamName = "sample_stream";
+        StreamS2NoLimits stream = new StreamS2NoLimits();
+        await stream.ExecuteAsync();
+/*        streamName = "sample_stream";
 
 
         // Produce
@@ -42,12 +45,14 @@ switch (key.Key)
         //producer.SetStreamLimitsSmall();
         await producer.ConnectAsync();
         await producer.PublishAsync();
+        await producer.StreamInfo();
 
         // Lets Start a Consumer
         consumer = new StreamConsumer(streamName);
         await consumer.ConnectAsync();
         consumer.SetConsumptionHandler(ConsumeMessageHandler);
         await consumer.ConsumeAsync();
+*/
         break;
     
     // Simple stream, but no defined queue parameters - we let RabbitMQ and it's policies define the parameters.
@@ -70,7 +75,7 @@ switch (key.Key)
         break;
 
     case ConsoleKey.D3:
-        streamName = "s3.1MinQueue";
+        streamName = "s3A.1MinQueue";
         // Produce
         producer = new StreamProducer(streamName);
         producer.SetStreamLimitsRaw(10000,500,60);
@@ -101,7 +106,7 @@ var streamLogger = loggerFactory.CreateLogger<StreamSystem>();
 */
 
 
- async Task ConsumeMessageHandler(string streamName, RawConsumer consumer, MessageContext msgContext, Message message)
+async Task ConsumeMessageHandler(string streamName, RawConsumer consumer, MessageContext msgContext, Message message)
 {
     //_counter++;
     int _counter = 0;
