@@ -20,14 +20,14 @@ namespace SlugEnt.StreamProcessor
             _producer = await Producer.Create(
                 new ProducerConfig(_streamSystem, _name)
                 {
-                    Reference = Guid.NewGuid().ToString(),
+                    // Is not necessary if sending from 1 thread.
+                    //Reference = Guid.NewGuid().ToString(),
 
 
                     ConfirmationHandler = OnConfirmation
                 });
 
         }
-
 
 
         public async Task SendMessage(string messageAsString)
@@ -44,7 +44,7 @@ namespace SlugEnt.StreamProcessor
             {
                 // ConfirmationStatus.Confirmed: The message was successfully sent
                 case ConfirmationStatus.Confirmed:
-                    Console.WriteLine($"Message {confirmation.PublishingId} Publisher Confirmed!");
+                    //Console.WriteLine($"Message {confirmation.PublishingId} Publisher Confirmed!");
                     break;
                 // There is an error during the sending of the message
                 case ConfirmationStatus.WaitForConfirmation:

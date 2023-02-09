@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Diagnostics.Metrics;
+using System.Runtime.InteropServices;
 using System.Text;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
@@ -36,24 +37,28 @@ switch (key.Key)
     // Simple stream with defined sizes set by us.  Once set, these can never be changed for the lifetime of the Queue, not the App!
     case ConsoleKey.D1:
         StreamS2NoLimits stream = new StreamS2NoLimits();
-        await stream.ExecuteAsync();
-/*        streamName = "sample_stream";
+        await stream.Start();
+        bool keepProcessing = true;
+        while (keepProcessing)
+        {
+            if (Console.KeyAvailable)
+            {
+                ConsoleKeyInfo d1KeyInfo = Console.ReadKey();
+                if (d1KeyInfo.Key == ConsoleKey.X)
+                {
+                    keepProcessing = false;
+                    await stream.Stop();
+                }
+            }
 
+            stream.CheckStatus();
+            Thread.Sleep(1000);
 
-        // Produce
-        producer = new StreamProducer(streamName);
-        //producer.SetStreamLimitsSmall();
-        await producer.ConnectAsync();
-        await producer.PublishAsync();
-        await producer.StreamInfo();
+        }
 
-        // Lets Start a Consumer
-        consumer = new StreamConsumer(streamName);
-        await consumer.ConnectAsync();
-        consumer.SetConsumptionHandler(ConsumeMessageHandler);
-        await consumer.ConsumeAsync();
-*/
+        Console.WriteLine($"Stream {stream.StreamName} has completed all processing.");
         break;
+
     
     // Simple stream, but no defined queue parameters - we let RabbitMQ and it's policies define the parameters.
     // This enables dynamic real time changes.
