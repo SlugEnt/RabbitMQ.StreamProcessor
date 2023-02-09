@@ -11,8 +11,7 @@ namespace SlugEnt.StreamProcessor
         //private Func<string, RawConsumer, MessageContext, Message, Task> _callHandler;
         private Func<Message, Task<bool>> _callHandler;
         private readonly string _consumerApplicationName;
-        private Consumer _rawConsumer;
-
+        private IConsumer _rawConsumer;
 
         /// <summary>
         /// Creates a Stream Consumer object
@@ -88,40 +87,35 @@ namespace SlugEnt.StreamProcessor
                 offsetType = new OffsetTypeFirst();
             }
 
-            await Consumer.Create(
-            new ConsumerConfig(_streamSystem, _name)
+            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_name)
             {
                 Reference = ConsumerApplicationName,
-
-                // Consume the stream from the beginning 
-                // See also other OffsetSpec 
                 OffsetSpec = offsetType,
-                
-                // Receive the messages
-                //MessageHandler = _callHandler,
                 MessageHandler = MessageHandler
-            }) ;
+
+            });
         }
 
 
-        //public long Counter { get; private set; }
-
+        /// <summary>
+        /// Sets the Method to be called when a message is received.
+        /// </summary>
+        /// <param name="callHandler"></param>
         public void SetConsumptionHandler(Func<Message, Task<bool>> callHandler) {
             _callHandler = callHandler; 
         }
 
 
-        private async Task CheckPointSet(RawConsumer rawConsumer, MessageContext messageContext)
-        {
-            await rawConsumer.StoreOffset(messageContext.Offset);
-            OffsetCounter = 0;
-        }
 
-
-        private async Task CheckPointSet(MessageContext messageContext)
+        /// <summary>
+        /// Performs a Offset store operation on the MQ Stream. Sets the offset to the offset of the last received message
+        /// </summary>
+        /// <returns></returns>
+        private async Task CheckPointSet()
         {
-            
-            //await  StoreOffset(messageContext.Offset);
+            if (LastOffset == 0) return;
+
+            _rawConsumer.StoreOffset(LastOffset);
             OffsetCounter = 0;
         }
 
@@ -138,9 +132,9 @@ namespace SlugEnt.StreamProcessor
         /// <param name="msgContext"></param>
         /// <param name="message">The message from the MQ Broker</param>
         /// <returns></returns>
-        private async Task MessageHandler(string streamName, RawConsumer consumer, MessageContext msgContext, Message message)
+        private async Task MessageHandler(RawConsumer consumer, MessageContext msgContext, Message message)
         {
-            string msg = Encoding.Default.GetString(message.Data.Contents.ToArray());
+            //string msg = Encoding.Default.GetString(message.Data.Contents.ToArray());
             bool success = await _callHandler(message);
             if (success)
             {
@@ -151,7 +145,7 @@ namespace SlugEnt.StreamProcessor
                 // TODO - Ideally this moves out of here and into a background thread that periodically checks to see if we should checkpoint.
                 if (OffsetCounter >= OffsetCheckPointLimit)
                 {
-                    CheckPointSet(consumer, msgContext);
+                    CheckPointSet();
                 }
 
             }
