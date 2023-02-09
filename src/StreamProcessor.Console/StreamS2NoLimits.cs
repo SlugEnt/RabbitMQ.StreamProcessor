@@ -19,7 +19,7 @@ namespace StreamProcessor.Console
         private int _counter = 0;
         private BackgroundWorker _bgwMsgSender;
         private BackgroundWorker _bgwMsgReceiver;
-        private long _receiveCounter;
+        
 
 
         internal StreamS2NoLimits()
@@ -39,18 +39,19 @@ namespace StreamProcessor.Console
         /// <summary>
         /// The Message consumer should call this each time a message is received.
         /// </summary>
-        internal long ReceiveCounter
+        internal ulong ReceiveCounter
         {
-            get { return _receiveCounter; }
+            get
+            {
+                return _consumer.Counter;}
             private set
             {
-                _receiveCounter++;
+                // TODO - Figure out what to do with periodic checks.  Ideally this should not be here as it is misleading as it does not update the actual getter field.
                 ReceiveSinceLastCheck++;
-                _consumer.OffsetCounter++;
             }
         }
 
-        internal long SendCounter { get; private set; } = 0;
+        //internal long SendCounter { get; private set; } = 0;
 
         /// <summary>
         /// Messages received since last check interval
@@ -123,7 +124,7 @@ namespace StreamProcessor.Console
 
             // Print Final Totals
             System.Console.WriteLine("Messages:");
-            System.Console.WriteLine($"  Produced:    {SendCounter}");
+            System.Console.WriteLine($"  Produced:    {_producer.SendCounter}");
             System.Console.WriteLine($"  Consumed:    {ReceiveCounter}");
 
         }
@@ -134,7 +135,7 @@ namespace StreamProcessor.Console
             if (SendSinceLastCheck > SendStatusUpdateInterval)
             {
                 System.Console.WriteLine(
-                    $"Produced:  {DateTime.Now.ToString("F")} -->  {SendSinceLastCheck} messages.  Total: {SendCounter}");
+                    $"Produced:  {DateTime.Now.ToString("F")} -->  {SendSinceLastCheck} messages.  Total: {_producer.SendCounter}");
                 SendSinceLastCheck = 0;
             }
 
@@ -155,6 +156,7 @@ namespace StreamProcessor.Console
             e.Cancel = true;
         }
 
+
         private void SendMessages(BackgroundWorker worker)
         {
             while (!_bgwMsgSender.CancellationPending)
@@ -166,13 +168,11 @@ namespace StreamProcessor.Console
                     string timeStamp = x.ToString("F");
                     string msg = String.Format("Time: {0}   -->  Batch Msg # {1}", timeStamp, i);
                     _producer.SendMessage(msg);
-                    SendCounter++;
                     SendSinceLastCheck++;
                 }
 
                 Thread.Sleep(10000);
             }
-
         }
 
 
@@ -218,20 +218,15 @@ namespace StreamProcessor.Console
         #endregion
 
 
-        public async Task ConsumeMessageHandler(string streamName, RawConsumer consumer, MessageContext msgContext, Message message)
+        public async Task<bool> ConsumeMessageHandler(Message message)
         {
             ReceiveCounter++;
-
-            string x = Encoding.Default.GetString(message.Data.Contents.ToArray());
+            //string x = Encoding.Default.GetString(message.Data.Contents.ToArray());
             //_messages.Add(x);
-            if (_consumer.OffsetCounter >= _consumer.OffsetCheckPointLimit)
-            {
-                _consumer.CheckpointOffset(consumer, msgContext);
-            }
 
             await Task.CompletedTask;
 
-
+            return true;
         }
 
 

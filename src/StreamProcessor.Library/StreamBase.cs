@@ -34,6 +34,12 @@ namespace SlugEnt.StreamProcessor
 
         }
 
+
+        /// <summary>
+        /// Number of messages received or sent depending on type of stream
+        /// </summary>
+        public ulong Counter { get; protected set; } = 0;
+
         public EnumStreamType StreamType { get; private set; }
         public bool IsConnected { get; private set; }
         public ulong MaxLength { get; set; }
@@ -65,7 +71,8 @@ namespace SlugEnt.StreamProcessor
             if (!await _streamSystem.StreamExists(_name))
             {
                 if (StreamType == EnumStreamType.Consumer)
-                    throw new ApplicationException("Stream - " + _name + " does not exist.");
+                    // TODO =- Change To Some type of Stream Exception
+                    throw new  ApplicationException("Stream - " + _name + " does not exist.");
                 if (_streamSpec == null)
                     throw new ApplicationException(
                         "For new Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");

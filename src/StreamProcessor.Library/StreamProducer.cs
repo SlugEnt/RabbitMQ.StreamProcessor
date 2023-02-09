@@ -14,6 +14,12 @@ namespace SlugEnt.StreamProcessor
         }
 
 
+        /// <summary>
+        /// Total Number of Messages sent since startup.
+        /// </summary>
+        public long SendCounter { get; private set; } = 0;
+
+
 
         public async Task PublishAsync()
         {
@@ -30,10 +36,16 @@ namespace SlugEnt.StreamProcessor
         }
 
 
+        /// <summary>
+        /// Sends the given message to the RabbitMQ stream
+        /// </summary>
+        /// <param name="messageAsString"></param>
+        /// <returns></returns>
         public async Task SendMessage(string messageAsString)
         {
             var message = new Message(Encoding.UTF8.GetBytes(messageAsString));
             await _producer.Send(message);
+            SendCounter++;
         }
 
 

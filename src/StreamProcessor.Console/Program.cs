@@ -1,9 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Microsoft.Extensions.Logging;
 using System.Buffers;
+using System.ComponentModel.Design;
 using System.Diagnostics.Metrics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 using SlugEnt.StreamProcessor;
@@ -18,6 +20,18 @@ var loggerFactory = LoggerFactory.Create(builder => {
     builder.AddSimpleConsole();
 });
 */
+
+// See if a configuration file exists.  If so read from it, otherwise start a new config
+Config config;
+string fileName = "Console.config";
+if (!File.Exists(fileName))
+    config = new Config();
+else
+{
+    using FileStream fileStream = File.OpenRead(fileName);
+    config = await JsonSerializer.DeserializeAsync<Config>(fileStream);
+}
+
 
 Console.WriteLine("Select which Program you wish to run.");
 Console.WriteLine(" ( 1 )  sample_stream - with Defined Queue Settings.");
@@ -111,12 +125,12 @@ var streamLogger = loggerFactory.CreateLogger<StreamSystem>();
 */
 
 
-async Task ConsumeMessageHandler(string streamName, RawConsumer consumer, MessageContext msgContext, Message message)
+async Task<bool> ConsumeMessageHandler(Message message)
 {
     //_counter++;
     int _counter = 0;
     string x = Encoding.Default.GetString(message.Data.Contents.ToArray());
     Console.WriteLine("Consumed Msg:  # {0} --> {1}", _counter, x);
     await Task.CompletedTask;
-
+    return true;
 }
