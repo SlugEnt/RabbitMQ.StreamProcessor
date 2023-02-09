@@ -4,18 +4,26 @@ using System.Net;
 
 namespace SlugEnt.StreamProcessor
 {
-    public abstract class StreamBase
+    /// <summary>
+    /// The base for the MQStreamProducer and MQStreamConsumer classes
+    /// </summary>
+    public abstract class MQStreamBase
     {
-        protected readonly string _streamName;
+        protected readonly string _MQStreamName;
         protected StreamSystemConfig _config;
         protected StreamSystem _streamSystem;
         protected StreamSpec _streamSpec;
 
 
-        public StreamBase (string streamName, EnumStreamType streamType)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="mqStreamName"></param>
+        /// <param name="mqStreamType"></param>
+        public MQStreamBase (string mqStreamName, EnumMQStreamType mqStreamType)
         {
-            _streamName = streamName;
-            StreamType = streamType;
+            _MQStreamName = mqStreamName;
+            MqStreamType = mqStreamType;
             
 
             IPEndPoint a = Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
@@ -35,12 +43,13 @@ namespace SlugEnt.StreamProcessor
         }
 
 
+
         /// <summary>
         /// The name of the stream we publish and consume messages from
         /// </summary>
-        public string StreamName
+        public string MQStreamName
         {
-            get { return _streamName; }
+            get { return _MQStreamName; }
         }
 
 
@@ -52,7 +61,7 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Whether this stream is a publisher or consumer
         /// </summary>
-        public EnumStreamType StreamType { get; private set; }
+        public EnumMQStreamType MqStreamType { get; private set; }
 
 
         /// <summary>
@@ -93,18 +102,22 @@ namespace SlugEnt.StreamProcessor
 
 
             // See if we need Stream Specs.  If it already exists on server we do not.
-            if (!await _streamSystem.StreamExists(_streamName))
+            bool streamExists = await _streamSystem.StreamExists(_MQStreamName);
+            if (! streamExists)
             {
-                if (StreamType == EnumStreamType.Consumer)
+                if (MqStreamType == EnumMQStreamType.Consumer)
                     // TODO =- Change To Some type of Stream Exception
-                    throw new  ApplicationException("Stream - " + _streamName + " does not exist.");
-                if (_streamSpec == null)
-                    throw new ApplicationException(
-                        "For new Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");
-            }
+                    throw new StreamSystemInitialisationException("Stream - " + _MQStreamName + " does not exist.");
+                else if (_streamSpec == null)
+                    throw new StreamSystemInitialisationException(
+                        "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");
 
-            // Connect to the Stream
-            _streamSystem.CreateStream(_streamSpec);
+                // Connect to the Stream
+                _streamSystem.CreateStream(_streamSpec);
+            }
+            else
+                // Connect to the Stream - But use the existing definition
+                _streamSystem.CreateStream(null);
 
             if (_streamSystem != null) IsConnected = true;
         }
@@ -117,7 +130,7 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public async Task DeleteStream()
         {
-            await _streamSystem.DeleteStream(_streamName);
+            await _streamSystem.DeleteStream(_MQStreamName);
         }
 
         public async Task StreamInfo()

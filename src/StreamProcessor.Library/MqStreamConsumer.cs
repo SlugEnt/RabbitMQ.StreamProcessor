@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SlugEnt.StreamProcessor
 {
-    public class StreamConsumer : StreamBase
+    public class MqStreamConsumer : MQStreamBase
     {
         //private Func<string, RawConsumer, MessageContext, Message, Task> _callHandler;
         private Func<Message, Task<bool>> _callHandler;
@@ -16,10 +16,10 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Creates a Stream Consumer object
         /// </summary>
-        /// <param name="streamName">The name of the RabbitMQ Queue (stream) name to receive messages from</param>
+        /// <param name="mqStreamName">The name of the RabbitMQ Queue (stream) name to receive messages from</param>
         /// <param name="consumerApplicationName">Unique name for the application processing this stream.  This is used when storing offsets in MQ to know which application the offset is for.  Re-using this across applications will surely result in applications missing messages.
         /// </param>
-        public StreamConsumer(string streamName, string consumerApplicationName = "") : base(streamName, EnumStreamType.Consumer)
+        public MqStreamConsumer(string mqStreamName, string consumerApplicationName = "") : base(mqStreamName, EnumMQStreamType.Consumer)
         {
             if (consumerApplicationName == string.Empty)
                 throw new ArgumentException(
@@ -51,7 +51,7 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
-        /// Owners of this class should increment this each time a message is consumed.  And reset it to 0 anytime the offset counter is stored in the message store.
+        /// How many messages have been consumed since last Checkpoint
         /// </summary>
         public int OffsetCounter { get; protected set; }
 
@@ -78,7 +78,7 @@ namespace SlugEnt.StreamProcessor
             IOffsetType offsetType;
             try
             {
-                ulong priorOffset = await _streamSystem.QueryOffset(ConsumerApplicationName, _streamName);
+                ulong priorOffset = await _streamSystem.QueryOffset(ConsumerApplicationName, _MQStreamName);
                 offsetType = new OffsetTypeOffset(priorOffset);
                 offsetFound = true;
             }
@@ -87,7 +87,7 @@ namespace SlugEnt.StreamProcessor
                 offsetType = new OffsetTypeFirst();
             }
 
-            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_streamName)
+            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_MQStreamName)
             {
                 Reference = ConsumerApplicationName,
                 OffsetSpec = offsetType,
@@ -111,11 +111,11 @@ namespace SlugEnt.StreamProcessor
         /// Performs a Offset store operation on the MQ Stream. Sets the offset to the offset of the last received message
         /// </summary>
         /// <returns></returns>
-        private async Task CheckPointSet()
+        public async Task CheckPointSet()
         {
             if (LastOffset == 0) return;
 
-            _rawConsumer.StoreOffset(LastOffset);
+            await _rawConsumer.StoreOffset(LastOffset);
             OffsetCounter = 0;
         }
 

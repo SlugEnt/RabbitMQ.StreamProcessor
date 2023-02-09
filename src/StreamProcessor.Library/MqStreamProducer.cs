@@ -5,7 +5,7 @@ using RabbitMQ.Stream.Client.AMQP;
 
 namespace SlugEnt.StreamProcessor
 {
-    public class StreamProducer : StreamBase
+    public class MqStreamProducer : MQStreamBase
     {
         Producer _producer;
 
@@ -14,7 +14,7 @@ namespace SlugEnt.StreamProcessor
         /// Builds an MQ Producer Stream
         /// </summary>
         /// <param name="name"></param>
-        public StreamProducer(string streamName) : base(streamName,EnumStreamType.Producer)
+        public MqStreamProducer(string mqStreamName) : base(mqStreamName,EnumMQStreamType.Producer)
         {
         }
 
@@ -38,7 +38,7 @@ namespace SlugEnt.StreamProcessor
         public async Task StartAsync()
         {
             _producer = await Producer.Create(
-                new ProducerConfig(_streamSystem, _streamName)
+                new ProducerConfig(_streamSystem, _MQStreamName)
                 {
                     // Is not necessary if sending from 1 thread.
                     //Reference = Guid.NewGuid().ToString(),
@@ -137,7 +137,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         public void SetNoStreamLimits()
         {
-            _streamSpec = new StreamSpec(_streamName);
+            _streamSpec = new StreamSpec(_MQStreamName);
         }
 
 
@@ -196,7 +196,7 @@ namespace SlugEnt.StreamProcessor
 
             TimeSpan maxAge = TimeSpan.FromSeconds(MaxAge);
 
-            _streamSpec = new StreamSpec(_streamName)
+            _streamSpec = new StreamSpec(_MQStreamName)
             {
                 MaxAge = maxAge,
                 MaxLengthBytes = MaxLength,
@@ -211,7 +211,7 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public async Task SetStreamLimitsSmall()
         {
-            _streamSpec = new StreamSpec(_streamName)
+            _streamSpec = new StreamSpec(_MQStreamName)
             {
                 MaxAge = TimeSpan.FromHours(2),
                 MaxLengthBytes = 20000,

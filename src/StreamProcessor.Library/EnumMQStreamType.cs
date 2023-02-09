@@ -1,6 +1,6 @@
 ﻿namespace SlugEnt.StreamProcessor;
 
-public enum EnumStreamType
+public enum EnumMQStreamType
 {
     Producer = 0,
     Consumer = 1

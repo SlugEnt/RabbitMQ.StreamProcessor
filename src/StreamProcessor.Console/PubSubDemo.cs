@@ -1,16 +1,16 @@
 ﻿using RabbitMQ.Stream.Client;
 using SlugEnt.StreamProcessor;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace StreamProcessor.Console
 {
-    internal class StreamS2NoLimits
+    internal class PubSubDemo
     {
         private readonly string _streamName;
         readonly MqStreamProducer _producer = null;
@@ -19,51 +19,42 @@ namespace StreamProcessor.Console
         private int _counter = 0;
         private BackgroundWorker _bgwMsgSender;
         private BackgroundWorker _bgwMsgReceiver;
-        
+        private Func<PubSubDemo,MqStreamProducer, BackgroundWorker, Task<bool>> _producerHandler;
+        private Func<Message, Task<bool>> _consumerHandler;
 
 
-        internal StreamS2NoLimits()
+        internal PubSubDemo(string streamName, 
+            string appName, 
+            Func<PubSubDemo,MqStreamProducer, BackgroundWorker,Task<bool>> producerMethod,
+            Func<Message,Task<bool>> messageHandler)
         {
-            _streamName = "sample_stream";
+            _streamName = streamName;
             _producer = new MqStreamProducer(_streamName);
-            _consumer = new MqStreamConsumer(_streamName,"S2Test");
+            _consumer = new MqStreamConsumer(_streamName, appName);
 
+            _producerHandler = producerMethod;
+            _consumerHandler = messageHandler;
         }
 
 
         internal string StreamName
         {
-            get { return _streamName;}
+            get { return _streamName; }
         }
 
 
-        /// <summary>
-        /// The Message consumer should call this each time a message is received.
-        /// </summary>
-        internal ulong ReceiveCounter
-        {
-            get
-            {
-                return _consumer.MessageCounter;}
-            private set
-            {
-                // TODO - Figure out what to do with periodic checks.  Ideally this should not be here as it is misleading as it does not update the actual getter field.
-                ReceiveSinceLastCheck++;
-            }
-        }
 
-        //internal long SendCounter { get; private set; } = 0;
 
         /// <summary>
         /// Messages received since last check interval
         /// </summary>
-        internal int ReceiveSinceLastCheck { get; private set; } = 0;
+        public int ReceiveSinceLastCheck { get;  set; } = 0;
 
 
         /// <summary>
         /// Messages Sent since last check interval
         /// </summary>
-        internal int SendSinceLastCheck { get; private set; } = 0;
+        public int SendSinceLastCheck { get; set; } = 0;
 
 
 
@@ -78,9 +69,17 @@ namespace StreamProcessor.Console
         internal short SendStatusUpdateInterval { get; set; } = 10;
 
 
+        public MqStreamProducer Producer
+        {
+            get { return _producer; }
+        }
+
+
 
         internal async Task Start()
         {
+            // Set the limits for the stream in case it does not exist.
+
             await _producer.ConnectAsync();
             await _consumer.ConnectAsync();
 
@@ -98,7 +97,8 @@ namespace StreamProcessor.Console
 
             // Consumer is a little different.  We go ahead and set the callback and tell it to start consuming.
             // The background worker merely checks to see if we should stop and prints a message out periodically
-            _consumer.SetConsumptionHandler(ConsumeMessageHandler);
+            //_consumer.SetConsumptionHandler(ConsumeMessageHandler);
+            _consumer.SetConsumptionHandler(_consumerHandler);
             await _consumer.ConsumeAsync();
 
 
@@ -106,12 +106,11 @@ namespace StreamProcessor.Console
             _bgwMsgReceiver.DoWork += Consumer_DoWork;
             _bgwMsgReceiver.RunWorkerCompleted += ConsumerCompleted;
             _bgwMsgReceiver.WorkerSupportsCancellation = true;
-            
+
 
             // Start Consuming messages
             System.Console.WriteLine("Starting to Consume Messages");
             _bgwMsgReceiver.RunWorkerAsync();
-
         }
 
 
@@ -126,12 +125,13 @@ namespace StreamProcessor.Console
             // Print Final Totals
             System.Console.WriteLine("Messages:");
             System.Console.WriteLine($"  Produced:    {_producer.MessageCounter}");
-            System.Console.WriteLine($"  Consumed:    {ReceiveCounter}");
+            //System.Console.WriteLine($"  Consumed:    {ReceiveCounter}");
 
         }
 
 
-        internal void CheckStatus()
+
+        internal async Task CheckStatus()
         {
             if (SendSinceLastCheck > SendStatusUpdateInterval)
             {
@@ -140,40 +140,35 @@ namespace StreamProcessor.Console
                 SendSinceLastCheck = 0;
             }
 
-            if (ReceiveSinceLastCheck > ReceiveStatusUpdateInterval)
+            if (_consumer.OffsetCounter > _consumer.OffsetCheckPointLimit)
             {
-                System.Console.WriteLine($"Consumed:  {DateTime.Now.ToString("F")} -->  {ReceiveSinceLastCheck} messages.  Total: {ReceiveCounter}");
+                System.Console.WriteLine($"Consumed:  {DateTime.Now.ToString("F")} -->  {_consumer.OffsetCounter} messages.  Total: {_consumer.MessageCounter}");
+                await _consumer.CheckPointSet();
                 ReceiveSinceLastCheck = 0;
             }
         }
+
+
+
 
 
 #region "Producer_Background_Worker"
         private void producer_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
-            SendMessages(worker);
+            ProduceMessages(worker);
 
             e.Cancel = true;
         }
 
 
-        private void SendMessages(BackgroundWorker worker)
+        /// <summary>
+        /// Calls the method to produce messages.  That method does not return until done.
+        /// </summary>
+        /// <param name="worker"></param>
+        private void ProduceMessages(BackgroundWorker worker)
         {
-            while (!_bgwMsgSender.CancellationPending)
-            {
-                // Publish the messages
-                for (var i = 0; i < 10; i++)
-                {
-                    DateTime x = DateTime.Now;
-                    string timeStamp = x.ToString("F");
-                    string msg = String.Format("Time: {0}   -->  Batch Msg # {1}", timeStamp, i);
-                    _producer.SendMessage(msg);
-                    SendSinceLastCheck++;
-                }
-
-                Thread.Sleep(10000);
-            }
+            _producerHandler(this, _producer, _bgwMsgSender);
         }
 
 
@@ -188,11 +183,11 @@ namespace StreamProcessor.Console
             else if (e.Error != null) System.Console.WriteLine("Producer had an error - {0}", e.Error.Message);
             else System.Console.WriteLine("Producer finished sending messages successfully");
         }
-#endregion
+        #endregion
 
 
 
-#region "Consumer_Background_Worker"
+        #region "Consumer_Background_Worker"
 
         private void Consumer_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -222,7 +217,7 @@ namespace StreamProcessor.Console
 
         public async Task<bool> ConsumeMessageHandler(Message message)
         {
-            ReceiveCounter++;
+            
             //string x = Encoding.Default.GetString(message.Data.Contents.ToArray());
             //_messages.Add(x);
 
