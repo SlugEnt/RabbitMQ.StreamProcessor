@@ -45,7 +45,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         public ulong MessagesConsumed
         {
-            get { return Counter; }
+            get { return MessageCounter; }
         }
 
 
@@ -78,7 +78,7 @@ namespace SlugEnt.StreamProcessor
             IOffsetType offsetType;
             try
             {
-                ulong priorOffset = await _streamSystem.QueryOffset(ConsumerApplicationName, _name);
+                ulong priorOffset = await _streamSystem.QueryOffset(ConsumerApplicationName, _streamName);
                 offsetType = new OffsetTypeOffset(priorOffset);
                 offsetFound = true;
             }
@@ -87,7 +87,7 @@ namespace SlugEnt.StreamProcessor
                 offsetType = new OffsetTypeFirst();
             }
 
-            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_name)
+            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_streamName)
             {
                 Reference = ConsumerApplicationName,
                 OffsetSpec = offsetType,
@@ -138,7 +138,7 @@ namespace SlugEnt.StreamProcessor
             bool success = await _callHandler(message);
             if (success)
             {
-                Counter++;
+                MessageCounter++;
                 OffsetCounter++;
                 LastOffset = msgContext.Offset;
 

@@ -6,15 +6,15 @@ namespace SlugEnt.StreamProcessor
 {
     public abstract class StreamBase
     {
-        protected readonly string _name;
+        protected readonly string _streamName;
         protected StreamSystemConfig _config;
         protected StreamSystem _streamSystem;
         protected StreamSpec _streamSpec;
 
 
-        public StreamBase (string name, EnumStreamType streamType)
+        public StreamBase (string streamName, EnumStreamType streamType)
         {
-            _name = name;
+            _streamName = streamName;
             StreamType = streamType;
             
 
@@ -36,13 +36,38 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
-        /// Number of messages received or sent depending on type of stream
+        /// The name of the stream we publish and consume messages from
         /// </summary>
-        public ulong Counter { get; protected set; } = 0;
+        public string StreamName
+        {
+            get { return _streamName; }
+        }
 
+
+        /// <summary>
+        /// Number of messages published or consumed depending on type of stream
+        /// </summary>
+        public ulong MessageCounter { get; protected set; } = 0;
+
+        /// <summary>
+        /// Whether this stream is a publisher or consumer
+        /// </summary>
         public EnumStreamType StreamType { get; private set; }
+
+
+        /// <summary>
+        /// Whether the stream is connected
+        /// </summary>
         public bool IsConnected { get; private set; }
+
+        /// <summary>
+        /// Maximum length this stream can be.  Only applicable on newly published streams
+        /// </summary>
         public ulong MaxLength { get; set; }
+
+        /// <summary>
+        /// Maximum segment size for this stream
+        /// </summary>
         public int MaxSegmentSize { get; set; }
 
         /// <summary>
@@ -68,11 +93,11 @@ namespace SlugEnt.StreamProcessor
 
 
             // See if we need Stream Specs.  If it already exists on server we do not.
-            if (!await _streamSystem.StreamExists(_name))
+            if (!await _streamSystem.StreamExists(_streamName))
             {
                 if (StreamType == EnumStreamType.Consumer)
                     // TODO =- Change To Some type of Stream Exception
-                    throw new  ApplicationException("Stream - " + _name + " does not exist.");
+                    throw new  ApplicationException("Stream - " + _streamName + " does not exist.");
                 if (_streamSpec == null)
                     throw new ApplicationException(
                         "For new Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");
@@ -85,93 +110,6 @@ namespace SlugEnt.StreamProcessor
         }
 
 
-        /// <summary>
-        /// Sets no limits for the stream - It will either be controlled by RabbitMQ policies or have no limits - which is unadvisable.
-        /// </summary>
-        public void SetNoStreamLimits()
-        {
-            _streamSpec = new StreamSpec(_name);
-        }
-
-
-        /// <summary>
-        /// Sets the stream specifications in its raw RabbitMQ requested units of measure
-        /// </summary>
-        /// <param name="maxLength"></param>
-        /// <param name="maxSegmentSize"></param>
-        /// <param name="maxAgeInSeconds"></param>
-        /// <returns></returns>
-        public async Task SetStreamLimitsRaw(ulong maxLength, int maxSegmentSize, ulong maxAgeInSeconds)
-        {
-            MaxAge = maxAgeInSeconds;
-            MaxLength = maxLength;
-            MaxSegmentSize = maxSegmentSize;
-            GenerateStreamSpec();
-        }
-
-
-
-        /// <summary>
-        /// Sets the Stream Limits in more typical units of measure
-        /// </summary>
-        /// <param name="maxBytesInMb"></param>
-        /// <param name="maxSegmentSizeInMb"></param>
-        /// <param name="maxAgeInHours"></param>
-        /// <returns></returns>
-        public async Task SetStreamLimits(int maxBytesInMb = 1, int maxSegmentSizeInMb = 1, ulong maxAgeInHours = 24)
-        {
-            // Convert Values to bytes
-            MaxLength = (ulong)maxBytesInMb * 1024 * 1024;
-            MaxSegmentSize = maxSegmentSizeInMb * 1024 * 1024;
-            MaxAge = maxAgeInHours * 24 * 60 * 60;
-
-            GenerateStreamSpec();
-        }
-
-
-
-        /// <summary>
-        /// Creates the Stream Specifications - Max age of messages, Max size of the stream, and the max size of a segment file
-        /// </summary>
-        /// <exception cref="ArgumentException"></exception>
-        private void GenerateStreamSpec()
-        {
-            if (MaxLength == 0)
-                throw new ArgumentException(
-                    "maxLength is zero.  You need to specify values > 0 for all 3 limits or call the method SetNoStreamLimits.");
-            if (MaxSegmentSize == 0)
-                throw new ArgumentException(
-                    "maxSegmentSize is zero.  You need to specify values > 0 for all 3 limits or call the method SetNoStreamLimits.");
-            if (MaxAge == 0)
-                throw new ArgumentException(
-                    "maxAge is zero.  You need to specify values > 0 for all 3 limits or call the method SetNoStreamLimits.");
-
-
-            TimeSpan maxAge = TimeSpan.FromSeconds(MaxAge);
-
-            _streamSpec = new StreamSpec(_name)
-            {
-                MaxAge = maxAge,
-                MaxLengthBytes = MaxLength,
-                MaxSegmentSizeBytes = MaxSegmentSize
-            };
-        }
-
-
-        /// <summary>
-        /// This is temporary so I can continue to use my sample queue.  
-        /// </summary>
-        /// <returns></returns>
-        public async Task SetStreamLimitsSmall()
-        {
-            _streamSpec = new StreamSpec(_name)
-            {
-                MaxAge = TimeSpan.FromHours(2),
-                MaxLengthBytes = 20000,
-                MaxSegmentSizeBytes = 10000
-            };
-        }
-
 
         /// <summary>
         /// Permanently deletes the Stream off the RabbitMQ Servers.
@@ -179,7 +117,7 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public async Task DeleteStream()
         {
-            await _streamSystem.DeleteStream(_name);
+            await _streamSystem.DeleteStream(_streamName);
         }
 
         public async Task StreamInfo()

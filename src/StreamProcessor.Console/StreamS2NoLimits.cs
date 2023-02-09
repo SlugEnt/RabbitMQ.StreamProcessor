@@ -30,6 +30,7 @@ namespace StreamProcessor.Console
 
         }
 
+
         internal string StreamName
         {
             get { return _streamName;}
@@ -43,7 +44,7 @@ namespace StreamProcessor.Console
         {
             get
             {
-                return _consumer.Counter;}
+                return _consumer.MessageCounter;}
             private set
             {
                 // TODO - Figure out what to do with periodic checks.  Ideally this should not be here as it is misleading as it does not update the actual getter field.
@@ -85,7 +86,7 @@ namespace StreamProcessor.Console
 
 
             // Setup Background Producer
-            await _producer.PublishAsync();
+            await _producer.StartAsync();
             _bgwMsgSender = new BackgroundWorker();
             _bgwMsgSender.DoWork += producer_DoWork;
             _bgwMsgSender.ProgressChanged += ProducerProgressChanged;
@@ -124,7 +125,7 @@ namespace StreamProcessor.Console
 
             // Print Final Totals
             System.Console.WriteLine("Messages:");
-            System.Console.WriteLine($"  Produced:    {_producer.SendCounter}");
+            System.Console.WriteLine($"  Produced:    {_producer.MessageCounter}");
             System.Console.WriteLine($"  Consumed:    {ReceiveCounter}");
 
         }
@@ -135,7 +136,7 @@ namespace StreamProcessor.Console
             if (SendSinceLastCheck > SendStatusUpdateInterval)
             {
                 System.Console.WriteLine(
-                    $"Produced:  {DateTime.Now.ToString("F")} -->  {SendSinceLastCheck} messages.  Total: {_producer.SendCounter}");
+                    $"Produced:  {DateTime.Now.ToString("F")} -->  {SendSinceLastCheck} messages.  Total: {_producer.MessageCounter}");
                 SendSinceLastCheck = 0;
             }
 
@@ -207,6 +208,7 @@ namespace StreamProcessor.Console
                 Thread.Sleep(2000);
             }
         }
+
 
 
         private void ConsumerCompleted(object sender, RunWorkerCompletedEventArgs e)
