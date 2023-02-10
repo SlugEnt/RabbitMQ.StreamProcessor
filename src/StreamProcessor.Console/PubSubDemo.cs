@@ -74,6 +74,10 @@ namespace StreamProcessor.Console
             get { return _producer; }
         }
 
+        public MqStreamConsumer Consumer
+        {
+            get { return _consumer; }
+        }
 
 
         internal async Task Start()

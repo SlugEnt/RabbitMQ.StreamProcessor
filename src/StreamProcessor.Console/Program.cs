@@ -38,6 +38,7 @@ Console.WriteLine("Select which Program you wish to run.");
 Console.WriteLine(" ( 1 )  sample_stream - with Defined Queue Settings.");
 Console.WriteLine(" ( 2 )  s2 - with no defined Queue Settings.");
 Console.WriteLine(" ( 3 )  s3.1MinQueue - Very small Queue size and age limits.");
+Console.WriteLine(" ( 0 )  Test Batches Logic.");
 ConsoleKeyInfo key = Console.ReadKey();
 
 
@@ -49,6 +50,46 @@ bool deleteStream = false;
 
 switch (key.Key)
 {
+    case ConsoleKey.D0:
+        string batch = "A";
+        for (int j = 0; j < 30; j++)
+        {
+            for (int i = 0; i < 26; i++)
+            {
+                Console.WriteLine($"{batch}");
+                batch = NextBatch(batch);
+
+            }
+        }
+
+        break;
+
+    case ConsoleKey.B:
+        BatchB b = new BatchB();
+        b.Execute();
+        bool keepProcessingB = true;
+        while (keepProcessingB)
+        {
+            if (Console.KeyAvailable)
+            {
+                ConsoleKeyInfo d1KeyInfo = Console.ReadKey();
+                if (d1KeyInfo.Key == ConsoleKey.X)
+                {
+                    keepProcessingB = false;
+                    await b.Stop();
+                }
+            }
+
+            //streamB.CheckStatus();
+            Thread.Sleep(1000);
+
+        }
+
+        System.Console.WriteLine($"Stream B has completed all processing.");
+
+
+
+        break;
 
     // Simple stream with defined sizes set by us.  Once set, these can never be changed for the lifetime of the Queue, not the App!
     case ConsoleKey.D1:
@@ -77,18 +118,18 @@ switch (key.Key)
 
     // Simple stream with defined sizes set by us.  Once set, these can never be changed for the lifetime of the Queue, not the App!
     case ConsoleKey.D2:
-        PubSubDemo streamB = new PubSubDemo("B","appB",B_Producer, B_Consumer);
+/*        PubSubDemo streamB = new PubSubDemo("B","appB",B_Producer, B_Consumer);
         streamB.Producer.SetStreamLimits(100, 20, 24);
         await streamB.Start();
-        bool keepProcessingB = true;
-        while (keepProcessingB)
+        bool keepProcessingC = true;
+        while (keepProcessingC)
         {
             if (Console.KeyAvailable)
             {
                 ConsoleKeyInfo d1KeyInfo = Console.ReadKey();
                 if (d1KeyInfo.Key == ConsoleKey.X)
                 {
-                    keepProcessingB = false;
+                    keepProcessingC = false;
                     await streamB.Stop();
                 }
             }
@@ -99,6 +140,7 @@ switch (key.Key)
         }
 
         Console.WriteLine($"Stream {streamB.StreamName} has completed all processing.");
+*/
         break;
 
 
@@ -164,34 +206,42 @@ async Task<bool> ConsumeMessageHandler(Message message)
 }
 
 
-async Task<bool> B_Producer(PubSubDemo demo,MqStreamProducer producer, BackgroundWorker bgwMsgSender)
+
+
+string NextBatch(string currentBatch)
 {
-    while (! bgwMsgSender.CancellationPending)
+    byte z = (byte)'Z';
+    byte[] batchIDs = Encoding.ASCII.GetBytes(currentBatch);
+
+    int lastIndex = batchIDs.Length -1;
+    int currentIndex = lastIndex;
+    bool continueLooping = true;
+
+    while (continueLooping)
     {
-        // Publish the messages
-        for (var i = 0; i < 10; i++)
+        if (batchIDs[currentIndex] == z)
         {
-            DateTime x = DateTime.Now;
-            string timeStamp = x.ToString("F");
-            string msg = String.Format("Time: {0}   -->  Batch Msg # {1}", timeStamp, i);
-            producer.SendMessage(msg);
-            demo.SendSinceLastCheck++;
+            if (currentIndex == 0)
+            {
+                // Append a new column
+                batchIDs[currentIndex] = (byte)'A';
+                string newBatch = Encoding.ASCII.GetString(batchIDs) + "A";
+                return newBatch;
+            }
+
+            // Change this index to A and move to the prior index.
+            batchIDs[currentIndex ] = (byte)'A';
+            currentIndex--;
         }
 
-        Thread.Sleep(10000);
+        // Just increment this index to next letter
+        else
+        {
+            batchIDs[currentIndex]++;
+            return Encoding.ASCII.GetString(batchIDs);
+        }
     }
-    return true;
-}
 
-
-
-async Task<bool> B_Consumer(Message message)
-{
-    
-    //string x = Encoding.Default.GetString(message.Data.Contents.ToArray());
-    //_messages.Add(x);
-
-    await Task.CompletedTask;
-
-    return true;
+    // Should never get here.
+    return currentBatch;
 }

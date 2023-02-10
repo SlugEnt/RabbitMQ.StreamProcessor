@@ -13,6 +13,13 @@ namespace SlugEnt.StreamProcessor
         private readonly string _consumerApplicationName;
         private IConsumer _rawConsumer;
 
+
+        /// <summary>
+        /// Whenever the Queue is checkpointed this event is raised.
+        /// </summary>
+        public event Action<string, ulong> CheckPointPerformedEvent;
+
+
         /// <summary>
         /// Creates a Stream Consumer object
         /// </summary>
@@ -115,12 +122,15 @@ namespace SlugEnt.StreamProcessor
         {
             if (LastOffset == 0) return;
 
-            await _rawConsumer.StoreOffset(LastOffset);
+            // TODO Not sure we shouldn't lock it.  Only negative with current code is it is possible
+            // that between last=LastOffset and OffsetCounter=0 LastOffset could be increased. and we would
+            // have to wait until next time in this method to store that value.
+            // Save last offset so we don't need to deal with thread locking.
+            ulong last = LastOffset;
+            await _rawConsumer.StoreOffset(last);
             OffsetCounter = 0;
+            CheckPointPerformedEvent($"Checkpoint on Stream {MQStreamName} with Reference [{ConsumerApplicationName}] was set.",last);
         }
-
-
-        //(Func<string,RawConsumer,MessageContext,Message,Task> consumptionMethod)
 
 
 
