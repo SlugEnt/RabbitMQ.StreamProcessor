@@ -38,6 +38,7 @@ Console.WriteLine("Select which Program you wish to run.");
 Console.WriteLine(" ( 1 )  sample_stream - with Defined Queue Settings.");
 Console.WriteLine(" ( 2 )  s2 - with no defined Queue Settings.");
 Console.WriteLine(" ( 3 )  s3.1MinQueue - Very small Queue size and age limits.");
+Console.WriteLine(" ( B )  Batch B Logic.");
 Console.WriteLine(" ( 0 )  Test Batches Logic.");
 ConsoleKeyInfo key = Console.ReadKey();
 
@@ -118,29 +119,7 @@ switch (key.Key)
 
     // Simple stream with defined sizes set by us.  Once set, these can never be changed for the lifetime of the Queue, not the App!
     case ConsoleKey.D2:
-/*        PubSubDemo streamB = new PubSubDemo("B","appB",B_Producer, B_Consumer);
-        streamB.Producer.SetStreamLimits(100, 20, 24);
-        await streamB.Start();
-        bool keepProcessingC = true;
-        while (keepProcessingC)
-        {
-            if (Console.KeyAvailable)
-            {
-                ConsoleKeyInfo d1KeyInfo = Console.ReadKey();
-                if (d1KeyInfo.Key == ConsoleKey.X)
-                {
-                    keepProcessingC = false;
-                    await streamB.Stop();
-                }
-            }
 
-            streamB.CheckStatus();
-            Thread.Sleep(1000);
-
-        }
-
-        Console.WriteLine($"Stream {streamB.StreamName} has completed all processing.");
-*/
         break;
 
 
@@ -149,13 +128,13 @@ switch (key.Key)
     case ConsoleKey.D3:
         streamName = "s2.NoLimits";
         // Produce
-        producer = new MqStreamProducer(streamName);
+        producer = new MqStreamProducer(streamName,"d3");
         producer.SetNoStreamLimits();
         await producer.ConnectAsync();
         await producer.StartAsync();
 
         // Lets Start a Consumer
-        consumer = new MqStreamConsumer(streamName);
+        consumer = new MqStreamConsumer(streamName,"d3");
         await consumer.ConnectAsync();
         consumer.SetConsumptionHandler(ConsumeMessageHandler);
         await consumer.ConsumeAsync();
@@ -166,13 +145,13 @@ switch (key.Key)
     case ConsoleKey.D4:
         streamName = "s3A.1MinQueue";
         // Produce
-        producer = new MqStreamProducer(streamName);
+        producer = new MqStreamProducer(streamName,"d4");
         producer.SetStreamLimitsRaw(10000,500,60);
         await producer.ConnectAsync();
         await producer.StartAsync();
 
         // Lets Start a Consumer
-        consumer = new MqStreamConsumer(streamName);
+        consumer = new MqStreamConsumer(streamName,"d4");
         await consumer.ConnectAsync();
         consumer.SetConsumptionHandler(ConsumeMessageHandler);
         await consumer.ConsumeAsync();

@@ -9,22 +9,30 @@ namespace SlugEnt.StreamProcessor
     /// </summary>
     public abstract class MQStreamBase
     {
-        protected readonly string _MQStreamName;
+        protected readonly string _mqStreamName;
         protected StreamSystemConfig _config;
         protected StreamSystem _streamSystem;
         protected StreamSpec _streamSpec;
+        protected readonly string _appName;
 
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="mqStreamName"></param>
-        /// <param name="mqStreamType"></param>
-        public MQStreamBase (string mqStreamName, EnumMQStreamType mqStreamType)
+        /// <param name="applicationName">This is the name of the application that owns this Stream process.
+        /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
+        /// <param name="mqStreamType">The type of MQ Stream</param>
+        public MQStreamBase (string mqStreamName, string applicationName,EnumMQStreamType mqStreamType)
         {
-            _MQStreamName = mqStreamName;
+            _mqStreamName = mqStreamName;
             MqStreamType = mqStreamType;
-            
+            _appName = applicationName;
+
+            if (applicationName == string.Empty) 
+                throw new ArgumentException(
+                "The ApplicationName must be specified and it must be unique for a given application");
+
 
             IPEndPoint a = Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
             IPEndPoint b = Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
@@ -39,17 +47,24 @@ namespace SlugEnt.StreamProcessor
                     a,b,c
                 },
             };
-
         }
 
 
+        /// <summary>
+        /// The application that owns this Stream Process.
+        /// It is used when checkpointing the Stream and is tagged in the message properties when creating the message
+        /// </summary>
+        public string ApplicationName
+        {
+            get { return _appName; }
+        }
 
         /// <summary>
         /// The name of the stream we publish and consume messages from
         /// </summary>
         public string MQStreamName
         {
-            get { return _MQStreamName; }
+            get { return _mqStreamName; }
         }
 
 
@@ -102,12 +117,12 @@ namespace SlugEnt.StreamProcessor
 
 
             // See if we need Stream Specs.  If it already exists on server we do not.
-            bool streamExists = await _streamSystem.StreamExists(_MQStreamName);
+            bool streamExists = await _streamSystem.StreamExists(_mqStreamName);
             if (! streamExists)
             {
                 if (MqStreamType == EnumMQStreamType.Consumer)
                     // TODO =- Change To Some type of Stream Exception
-                    throw new StreamSystemInitialisationException("Stream - " + _MQStreamName + " does not exist.");
+                    throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
                 else if (_streamSpec == null)
                     throw new StreamSystemInitialisationException(
                         "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");
@@ -130,7 +145,7 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public async Task DeleteStream()
         {
-            await _streamSystem.DeleteStream(_MQStreamName);
+            await _streamSystem.DeleteStream(_mqStreamName);
         }
 
         public async Task StreamInfo()

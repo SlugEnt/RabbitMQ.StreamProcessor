@@ -25,7 +25,7 @@ namespace StreamProcessor.Console
         internal StreamS2NoLimits()
         {
             _streamName = "sample_stream";
-            _producer = new MqStreamProducer(_streamName);
+            _producer = new MqStreamProducer(_streamName,"test");
             _consumer = new MqStreamConsumer(_streamName,"S2Test");
 
         }

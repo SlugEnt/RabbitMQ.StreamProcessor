@@ -12,9 +12,12 @@ namespace SlugEnt.StreamProcessor
 
         /// <summary>
         /// Builds an MQ Producer Stream
+        /// <param name="mqStreamName"></param>
+        /// <param name="applicationName">This is the name of the application that owns this Stream process.
+        /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
+        /// </param>
         /// </summary>
-        /// <param name="name"></param>
-        public MqStreamProducer(string mqStreamName) : base(mqStreamName,EnumMQStreamType.Producer)
+        public MqStreamProducer(string mqStreamName, string applicationName) : base(mqStreamName,applicationName,EnumMQStreamType.Producer)
         {
         }
 
@@ -38,7 +41,7 @@ namespace SlugEnt.StreamProcessor
         public async Task StartAsync()
         {
             _producer = await Producer.Create(
-                new ProducerConfig(_streamSystem, _MQStreamName)
+                new ProducerConfig(_streamSystem, _mqStreamName)
                 {
                     // Is not necessary if sending from 1 thread.
                     //Reference = Guid.NewGuid().ToString(),
@@ -59,13 +62,23 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public Message CreateMessage(string messageAsString)
         {
-            return new Message(Encoding.UTF8.GetBytes(messageAsString));
+            Message msg = new Message(Encoding.UTF8.GetBytes(messageAsString));
+            msg.Properties = new Properties()
+            {
+                CreationTime = DateTime.Now
+            };
+
+            msg.ApplicationProperties = new ApplicationProperties
+            {
+                { "Source", ApplicationName }
+            };
+            return msg;
         }
 
 
 
         /// <summary>
-        /// Sends the given message to the MQ Stream
+        /// Sends the given message to the MQ Stream.
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
@@ -128,6 +141,7 @@ namespace SlugEnt.StreamProcessor
                     break;
             }
 
+            
             return Task.CompletedTask;
         }
 
@@ -137,7 +151,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         public void SetNoStreamLimits()
         {
-            _streamSpec = new StreamSpec(_MQStreamName);
+            _streamSpec = new StreamSpec(_mqStreamName);
         }
 
 
@@ -196,7 +210,7 @@ namespace SlugEnt.StreamProcessor
 
             TimeSpan maxAge = TimeSpan.FromSeconds(MaxAge);
 
-            _streamSpec = new StreamSpec(_MQStreamName)
+            _streamSpec = new StreamSpec(_mqStreamName)
             {
                 MaxAge = maxAge,
                 MaxLengthBytes = MaxLength,
@@ -211,7 +225,7 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public async Task SetStreamLimitsSmall()
         {
-            _streamSpec = new StreamSpec(_MQStreamName)
+            _streamSpec = new StreamSpec(_mqStreamName)
             {
                 MaxAge = TimeSpan.FromHours(2),
                 MaxLengthBytes = 20000,

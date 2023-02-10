@@ -23,21 +23,13 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Creates a Stream Consumer object
         /// </summary>
-        /// <param name="mqStreamName">The name of the RabbitMQ Queue (stream) name to receive messages from</param>
-        /// <param name="consumerApplicationName">Unique name for the application processing this stream.  This is used when storing offsets in MQ to know which application the offset is for.  Re-using this across applications will surely result in applications missing messages.
+        /// <param name="mqStreamName"></param>
+        /// <param name="applicationName">This is the name of the application that owns this Stream process.
+        /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
         /// </param>
-        public MqStreamConsumer(string mqStreamName, string consumerApplicationName = "") : base(mqStreamName, EnumMQStreamType.Consumer)
+        public MqStreamConsumer(string mqStreamName, string applicationName) : base(mqStreamName, applicationName, EnumMQStreamType.Consumer)
         {
-            if (consumerApplicationName == string.Empty)
-                throw new ArgumentException(
-                    "The consumerApplicationName must be specified and it must be unique for a given application");
-            _consumerApplicationName = consumerApplicationName;
-        }
 
-
-        public string ConsumerApplicationName
-        {
-            get { return _consumerApplicationName;}
         }
 
 
@@ -85,7 +77,7 @@ namespace SlugEnt.StreamProcessor
             IOffsetType offsetType;
             try
             {
-                ulong priorOffset = await _streamSystem.QueryOffset(ConsumerApplicationName, _MQStreamName);
+                ulong priorOffset = await _streamSystem.QueryOffset(ApplicationName, _mqStreamName);
                 offsetType = new OffsetTypeOffset(priorOffset);
                 offsetFound = true;
             }
@@ -94,9 +86,9 @@ namespace SlugEnt.StreamProcessor
                 offsetType = new OffsetTypeFirst();
             }
 
-            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_MQStreamName)
+            _rawConsumer = await _streamSystem.CreateRawConsumer(new RawConsumerConfig(_mqStreamName)
             {
-                Reference = ConsumerApplicationName,
+                Reference = ApplicationName,
                 OffsetSpec = offsetType,
                 MessageHandler = MessageHandler
 
@@ -129,7 +121,7 @@ namespace SlugEnt.StreamProcessor
             ulong last = LastOffset;
             await _rawConsumer.StoreOffset(last);
             OffsetCounter = 0;
-            CheckPointPerformedEvent($"Checkpoint on Stream {MQStreamName} with Reference [{ConsumerApplicationName}] was set.",last);
+            CheckPointPerformedEvent($"Checkpoint on Stream {MQStreamName} with Reference [{ApplicationName}] was set.",last);
         }
 
 

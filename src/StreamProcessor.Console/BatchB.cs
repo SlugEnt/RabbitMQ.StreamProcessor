@@ -49,23 +49,20 @@ namespace StreamProcessor.Console
             while (!bgwMsgSender.CancellationPending)
             {
                 // Publish the messages
-                for (var i = 0; i < 30; i++)
+                for (var i = 0; i < 1000; i++)
                 {
-                    DateTime x = DateTime.Now;
-                    string timeStamp = x.ToString("F");
-                    //string msg = String.Format("Time: {0}   -->  Batch Msg # {1}", timeStamp, i);
                     string msg = String.Format($"ID: {i} hello");
 
                     Message message = producer.CreateMessage(msg);
-                    message.ApplicationProperties = new ApplicationProperties();
                     message.ApplicationProperties.Add("Batch",_batch);
+                    message.Properties.ReplyTo = "scott";
                     producer.SendMessage(message);
                     demo.SendSinceLastCheck++;
                 }
 
                 _batch = NextBatch(_batch);
 
-                Thread.Sleep(3000);
+                //Thread.Sleep(3000);
             }
             return true;
         }

@@ -29,7 +29,7 @@ namespace StreamProcessor.Console
             Func<Message,Task<bool>> messageHandler)
         {
             _streamName = streamName;
-            _producer = new MqStreamProducer(_streamName);
+            _producer = new MqStreamProducer(_streamName,appName);
             _consumer = new MqStreamConsumer(_streamName, appName);
 
             _producerHandler = producerMethod;
