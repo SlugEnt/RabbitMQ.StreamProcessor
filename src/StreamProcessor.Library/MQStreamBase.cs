@@ -16,6 +16,7 @@ namespace SlugEnt.StreamProcessor
         protected readonly string _appName;
 
 
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -82,7 +83,7 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Whether the stream is connected
         /// </summary>
-        public bool IsConnected { get; private set; }
+        public bool IsConnected { get; protected set; }
 
         /// <summary>
         /// Maximum length this stream can be.  Only applicable on newly published streams

@@ -14,6 +14,7 @@
     <RepositoryUrl>https://github.com/SlugEnt/RabbitMQ.StreamProcessor</RepositoryUrl>
     <PackageReleaseNotes>Alpha Development</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,7 +7,16 @@ namespace SlugEnt.StreamProcessor
 {
     public class MqStreamProducer : MQStreamBase
     {
-        Producer _producer;
+        protected Producer _producer;
+        private Func<MessagesConfirmation, Task> _messageConfirmationHandler = null;
+        private int _consecutiveErrors;
+        private bool _circuitBreakerTripped = false;
+
+
+        /// <summary>
+        /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
+        /// </summary>
+        public event Action<MessagesConfirmation> ConfirmationErrorEvent;
 
 
         /// <summary>
@@ -23,6 +32,38 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
+        /// This tells you how many errors have been detected without a successful message.  Anytime a message is successfully confirmed this
+        /// is reset to zero.  So if > 0 then multiple messages have been unsuccessful
+        /// </summary>
+        public int ConsecutiveErrors
+        {
+            get { return _consecutiveErrors;}
+            protected set
+            {
+                _consecutiveErrors = value;
+                if (_consecutiveErrors >= CircuitBreakerStopLimit)
+                    _circuitBreakerTripped = true;
+            }
+        }
+
+
+        /// <summary>
+        /// Returns the status of the circuit breaker.  If true, message publishing is significantly diminished
+        /// </summary>
+        public bool CircuitBreakerTripped
+        {
+            get { return _circuitBreakerTripped; }
+        }
+
+
+        /// <summary>
+        /// Sets the number of consecutive message failures that occur before we stop producing any more messages
+        /// </summary>
+        public int CircuitBreakerStopLimit { get; set; }
+
+
+
+        /// <summary>
         /// Total Number of Messages sent since startup.
         /// </summary>
         public ulong SendCount
@@ -31,7 +72,15 @@ namespace SlugEnt.StreamProcessor
         }
 
 
-
+        /// <summary>
+        /// This method sets the method that is called when a message has been successfully confirmed.
+        /// <para>Only set this if you need to do something with the confirmed message.</para>
+        /// </summary>
+        /// <param name="confirmationHandler"></param>
+        public void SetConfirmationHandler(Func<MessagesConfirmation, Task> confirmationHandler)
+        {
+            _messageConfirmationHandler = confirmationHandler;
+        }
 
 
         /// <summary>
@@ -110,38 +159,49 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
-        /// When a message has been confirmed this method is called.
+        /// Handles message confirmations.  If the user has supplied their own then this method will
+        /// handle the errors and then pass onto the user supplied method.
         /// </summary>
         /// <param name="confirmation"></param>
         /// <returns></returns>
-        public Task OnConfirmation (MessagesConfirmation confirmation)
+        protected Task OnConfirmation (MessagesConfirmation confirmation)
         {
-            switch (confirmation.Status)
+            if (confirmation.Status == ConfirmationStatus.Confirmed)
             {
-                // ConfirmationStatus.Confirmed: The message was successfully sent
-                case ConfirmationStatus.Confirmed:
-                    //Console.WriteLine($"Message {confirmation.PublishingId} Publisher Confirmed!");
-                    break;
-                // There is an error during the sending of the message
-                case ConfirmationStatus.WaitForConfirmation:
-                case ConfirmationStatus.ClientTimeoutError
-                    : // The client didn't receive the confirmation in time. 
-                      // but it doesn't mean that the message was not sent
-                      // maybe the broker needs more time to confirm the message
-                      // see TimeoutMessageAfter in the ProducerConfig
-                case ConfirmationStatus.StreamNotAvailable:
-                case ConfirmationStatus.InternalError:
-                case ConfirmationStatus.AccessRefused:
-                case ConfirmationStatus.PreconditionFailed:
-                case ConfirmationStatus.PublisherDoesNotExist:
-                case ConfirmationStatus.UndefinedError:
-                default:
-                    Console.WriteLine(
-                        $"Message  {confirmation.PublishingId} not confirmed. Error {confirmation.Status}");
-                    break;
+                ConsecutiveErrors = 0;
+                if (_messageConfirmationHandler != null)
+                {
+                    _messageConfirmationHandler(confirmation);
+                }
+            }
+            else
+            {
+                ConsecutiveErrors++;
+                ConfirmationErrorEvent(confirmation);
+/*                switch (confirmation.Status)
+                {
+                    
+                    // There is an error during the sending of the message
+                    case ConfirmationStatus.WaitForConfirmation:
+                    case ConfirmationStatus.ClientTimeoutError
+                        : // The client didn't receive the confirmation in time. 
+                    // but it doesn't mean that the message was not sent
+                    // maybe the broker needs more time to confirm the message
+                    // see TimeoutMessageAfter in the ProducerConfig
+                    case ConfirmationStatus.StreamNotAvailable:
+                    case ConfirmationStatus.InternalError:
+                    case ConfirmationStatus.AccessRefused:
+                    case ConfirmationStatus.PreconditionFailed:
+                    case ConfirmationStatus.PublisherDoesNotExist:
+                    case ConfirmationStatus.UndefinedError:
+                    default:
+                        Console.WriteLine(
+                            $"Message  {confirmation.PublishingId} not confirmed. Error {confirmation.Status}");
+                        break;
+                }
+*/
             }
 
-            
             return Task.CompletedTask;
         }
 
