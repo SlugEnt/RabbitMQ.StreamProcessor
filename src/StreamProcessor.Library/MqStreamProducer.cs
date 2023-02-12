@@ -8,15 +8,16 @@ namespace SlugEnt.StreamProcessor
 {
     public class MqStreamProducer : MQStreamBase
     {
-        private const int CIRCUIT_BREAKER_MIN_SLEEP = 500;
-        private const int CIRCUIT_BREAKER_NORMAL_SLEEP = 2100;
-        private const int CIRCUIT_BREAKER_MAX_SLEEP = 1000;
+        public const int CIRCUIT_BREAKER_MIN_SLEEP = 2000;
+        public const int CIRCUIT_BREAKER_MAX_SLEEP = 180000;  // 3 minutes
+        public const int RETRY_INITIAL_MSG_COUNT = 3;
+        
 
         protected Producer _producer;
         private Func<MessagesConfirmation, Task> _messageConfirmationHandler = null;
         private int _consecutiveErrors;
         private bool _circuitBreakerTripped = false;
-        private ConcurrentQueue<Message> _retryMessagesQueue;
+        protected ConcurrentQueue<Message> _retryMessagesQueue;
         private Thread _retryThread = null;
         private readonly object _retryThreadLock = new object();
 
@@ -68,7 +69,7 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Returns the number of messages that are waiting in the Retry Queue - Messages that failed to send previously
         /// </summary>
-        public int QueuedMessageCount
+        public int Stat_RetryQueuedMessageCount
         {
             get { return _retryMessagesQueue.Count; }
         }
@@ -79,6 +80,13 @@ namespace SlugEnt.StreamProcessor
         public ulong SendCount
         {
             get { return MessageCounter;}
+        }
+
+
+        public ulong Stat_MessagesSuccessfullyConfirmed
+        {
+            get;
+            private set;
         }
 
 
@@ -145,39 +153,37 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
-        /// Sends the given message to the MQ Stream.
+        /// Sends the given message to the MQ Stream.  If this returns false, then the CircuitBreaker has been set.
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Message to send</param>
         /// <param name="bypassCircuitBreaker">If true, the Circuit breaker will be bypassed.  Used during Resends</param>
         /// <returns></returns>
-        protected async Task SendMessage(Message message, bool bypassCircuitBreaker = false)
+        protected async Task<bool> SendMessage(Message message, bool bypassCircuitBreaker = false)
         {
-            try
-            {
                 if (!CircuitBreakerTripped || bypassCircuitBreaker)
                 {
                     await SendMessageToMQ(message);
                     MessageCounter++;
+                    return true;
                 }
                 else
                 {
                     bool keepChecking = true;
-                    while (keepChecking)
+                    short loopCounter = 0;
+                    while (keepChecking && loopCounter < 4)
                     {
-                        if (CircuitBreakerTripped) Thread.Sleep(2000);
+                        loopCounter++;
+                        if (CircuitBreakerTripped) Thread.Sleep(200);
                         else
                         {
                             await SendMessageToMQ(message);
                             MessageCounter++;
-                            keepChecking = false;
+                            return true;
                         }
                     }
+                    // Failed to send the message.
+                    return false;
                 }
-            }
-            catch (Exception ex)
-            {
-                // TODO Log the error
-            }
         }
 
 
@@ -187,9 +193,9 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public async Task SendMessage(Message message)
+        public async Task<bool> SendMessage(Message message)
         {
-            await SendMessage(message, false);
+            return await SendMessage(message, false);
         }
 
 
@@ -198,10 +204,10 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         /// <param name="messageAsString">The actual body of the message</param>
         /// <returns></returns>
-        public async Task SendMessage(string messageAsString)
+        public async Task<bool> SendMessage(string messageAsString)
         {
-            var message = new Message(Encoding.UTF8.GetBytes(messageAsString));
-            await SendMessage(message);
+            Message message = new Message(Encoding.UTF8.GetBytes(messageAsString));
+            return await SendMessage(message);
         }
 
 
@@ -231,61 +237,74 @@ namespace SlugEnt.StreamProcessor
         /// <param name="messages"></param>
         protected void ConfirmationProcessor(ConfirmationStatus status, List<Message> messages)
         {
-            if (status == ConfirmationStatus.Confirmed)
+            bool newErrors = false;
+
+            foreach (Message message in messages)
             {
-                ConsecutiveErrors = 0;
-                if (MessageConfirmationSuccess != null)
+                if (status == ConfirmationStatus.Confirmed)
                 {
+                    ConsecutiveErrors = 0;
+                    Stat_MessagesSuccessfullyConfirmed++;
+
+                    if (MessageConfirmationSuccess != null)
+                    {
+                        MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
+                        eventArgs.Status = status;
+                        eventArgs.Messages = messages;
+                        OnConfirmationSuccess(eventArgs);
+                    }
+                }
+                else
+                {
+                    ConsecutiveErrors++;
+                    newErrors = true;
+
+                    if (message.ApplicationProperties != null)
+                    {
+                        if (message.ApplicationProperties.ContainsKey(MQStreamBase.AP_RETRIES))
+                            message.ApplicationProperties[MQStreamBase.AP_RETRIES] =
+                                (int)message.ApplicationProperties[MQStreamBase.AP_RETRIES] + 1;
+                        else
+                            message.ApplicationProperties.Add(MQStreamBase.AP_RETRIES, 1);
+                    }
+
+                    _retryMessagesQueue.Enqueue(message);
+
                     MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
                     eventArgs.Status = status;
                     eventArgs.Messages = messages;
-                    OnConfirmationSuccess(eventArgs);
+                    OnConfirmationError(eventArgs);
+
                 }
             }
-            else
-            {
 
-                // Add message to retry Queue
-                foreach (var msg in messages)
-                {
-                    ConsecutiveErrors++;
-
-                    if (msg.ApplicationProperties != null)
-                    {
-                        if (msg.ApplicationProperties.ContainsKey(MQStreamBase.AP_RETRIES))
-                            msg.ApplicationProperties[MQStreamBase.AP_RETRIES] =
-                                (int)msg.ApplicationProperties[MQStreamBase.AP_RETRIES] + 1;
-                        else
-                            msg.ApplicationProperties.Add(MQStreamBase.AP_RETRIES, 1);
-                    }
-
-                    _retryMessagesQueue.Enqueue(msg);
-                }
-
-
+            if (newErrors) {
                 // Start the Retry Thread if not already running.
                 if (AutoRetryFailedConfirmations)
                 {
-                    lock (_retryThreadLock)
-                    {
-                        if (_retryThread == null)
-                        {
-                            _retryThread = new Thread(ThreadedRetryMessages);
-                            _retryThread.IsBackground = true;
-                            _retryThread.Start();
-                        }
-                    }
+                    TurnAutoRetryThreadOn();
                 }
-
-                MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
-                eventArgs.Status = status;
-                eventArgs.Messages = messages;
-                OnConfirmationError(eventArgs);
             }
-
         }
 
 
+
+        /// <summary>
+        /// Turns the Auto-Retry Thread on.
+        /// </summary>
+        protected void TurnAutoRetryThreadOn()
+        {
+            lock (_retryThreadLock)
+            {
+                if (_retryThread == null)
+                {
+                    _retryThread = new Thread(ThreadedRetryMessages);
+                    _retryThread.IsBackground = true;
+                    _retryThread.Start();
+                }
+            }
+
+        }
 
         /// <summary>
         /// Sets no limits for the stream - It will either be controlled by RabbitMQ policies or have no limits - which is unadvisable.
@@ -376,11 +395,14 @@ namespace SlugEnt.StreamProcessor
 
 
 
+        /// <summary>
+        /// Processes Queued Retry messages
+        /// </summary>
         private void ThreadedRetryMessages()
         {
             // We retry a max of 3 messages.
             int attempts = 0;
-            int maxMessages = 3;
+            int maxMessages = RETRY_INITIAL_MSG_COUNT;
             int sleepTime = CIRCUIT_BREAKER_MIN_SLEEP;
             int stopThreadAfter = 0;
 
@@ -421,6 +443,12 @@ namespace SlugEnt.StreamProcessor
 
 
 
+        /// <summary>
+        /// Attempts to send the specified number of messages from the Retry Queue.
+        /// <para> Note, this bypasses the Circuit Breaker check in SendMessage.  It will ALWAYS attempt to send to MQ</para>
+        /// </summary>
+        /// <param name="maxMessages"></param>
+        /// <returns></returns>
         private bool ResendMessages(int maxMessages)
         {
             for (int i = 0; i < maxMessages; i++)

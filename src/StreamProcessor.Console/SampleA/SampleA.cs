@@ -44,7 +44,7 @@ public class SampleA
                 }
             }
 
-            System.Console.WriteLine($"Queued Messages: {_producerA.QueuedMessageCount}");
+            System.Console.WriteLine($"Queued Messages: {_producerA.Stat_RetryQueuedMessageCount}");
             System.Console.WriteLine($"Message Counter: {_producerA.MessageCounter}");
             System.Console.WriteLine($"Circuit Breaker Status: {_producerA.CircuitBreakerTripped}");
 
