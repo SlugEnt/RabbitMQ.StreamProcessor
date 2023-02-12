@@ -11,4 +11,12 @@
     <ProjectReference Include="..\StreamProcessor.Library\StreamProcessor.Library.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="SampleA\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Colorful.Console" Version="1.2.15" />
+  </ItemGroup>
+
 </Project>

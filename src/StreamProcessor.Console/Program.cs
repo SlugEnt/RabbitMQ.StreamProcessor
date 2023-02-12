@@ -12,6 +12,7 @@ using RabbitMQ.Stream.Client.Reliable;
 using SlugEnt.StreamProcessor;
 using System.Xml.Linq;
 using StreamProcessor.Console;
+using StreamProcessor.Console.SampleA;
 
 
 Console.WriteLine("MQ Stream Sender");
@@ -38,6 +39,7 @@ Console.WriteLine("Select which Program you wish to run.");
 Console.WriteLine(" ( 1 )  sample_stream - with Defined Queue Settings.");
 Console.WriteLine(" ( 2 )  s2 - with no defined Queue Settings.");
 Console.WriteLine(" ( 3 )  s3.1MinQueue - Very small Queue size and age limits.");
+Console.WriteLine(" ( A )  Sample A Logic.");
 Console.WriteLine(" ( B )  Batch B Logic.");
 Console.WriteLine(" ( 0 )  Test Batches Logic.");
 ConsoleKeyInfo key = Console.ReadKey();
@@ -51,6 +53,11 @@ bool deleteStream = false;
 
 switch (key.Key)
 {
+    case ConsoleKey.A:
+        SampleA sampleA = new SampleA(4);
+        sampleA.Start();
+        break;
+
     case ConsoleKey.D0:
         string batch = "A";
         for (int j = 0; j < 30; j++)
@@ -58,7 +65,7 @@ switch (key.Key)
             for (int i = 0; i < 26; i++)
             {
                 Console.WriteLine($"{batch}");
-                batch = NextBatch(batch);
+                batch = HelperFunctions.NextBatch(batch);
 
             }
         }
@@ -185,42 +192,3 @@ async Task<bool> ConsumeMessageHandler(Message message)
 }
 
 
-
-
-string NextBatch(string currentBatch)
-{
-    byte z = (byte)'Z';
-    byte[] batchIDs = Encoding.ASCII.GetBytes(currentBatch);
-
-    int lastIndex = batchIDs.Length -1;
-    int currentIndex = lastIndex;
-    bool continueLooping = true;
-
-    while (continueLooping)
-    {
-        if (batchIDs[currentIndex] == z)
-        {
-            if (currentIndex == 0)
-            {
-                // Append a new column
-                batchIDs[currentIndex] = (byte)'A';
-                string newBatch = Encoding.ASCII.GetString(batchIDs) + "A";
-                return newBatch;
-            }
-
-            // Change this index to A and move to the prior index.
-            batchIDs[currentIndex ] = (byte)'A';
-            currentIndex--;
-        }
-
-        // Just increment this index to next letter
-        else
-        {
-            batchIDs[currentIndex]++;
-            return Encoding.ASCII.GetString(batchIDs);
-        }
-    }
-
-    // Should never get here.
-    return currentBatch;
-}

@@ -153,5 +153,10 @@ namespace SlugEnt.StreamProcessor
         {
          
         }
+
+
+        // These are Message.ApplicationProperties Keys that are used
+        public const string AP_RETRIES = "Retries";
+
     }
 }

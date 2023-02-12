@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using System.Threading.Tasks;
+using RabbitMQ.Stream.Client.Reliable;
 
 namespace StreamProcessor.Console
 {
@@ -21,6 +22,7 @@ namespace StreamProcessor.Console
         private BackgroundWorker _bgwMsgReceiver;
         private Func<PubSubDemo,MqStreamProducer, BackgroundWorker, Task<bool>> _producerHandler;
         private Func<Message, Task<bool>> _consumerHandler;
+        private Action<MessagesConfirmation> _producerSuccessConfirmationHandler;
 
 
         internal PubSubDemo(string streamName, 
@@ -43,6 +45,10 @@ namespace StreamProcessor.Console
         }
 
 
+        public void OnSuccessConfirmationEvent(MessagesConfirmation messagesConfirmation)
+        {
+
+        }
 
 
         /// <summary>
@@ -187,6 +193,8 @@ namespace StreamProcessor.Console
             else if (e.Error != null) System.Console.WriteLine("Producer had an error - {0}", e.Error.Message);
             else System.Console.WriteLine("Producer finished sending messages successfully");
         }
+
+
         #endregion
 
 

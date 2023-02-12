@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Stream.Client;
+﻿using System.Collections.Concurrent;
+using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 using System.Text;
 using RabbitMQ.Stream.Client.AMQP;
@@ -7,16 +8,17 @@ namespace SlugEnt.StreamProcessor
 {
     public class MqStreamProducer : MQStreamBase
     {
+        private const int CIRCUIT_BREAKER_MIN_SLEEP = 500;
+        private const int CIRCUIT_BREAKER_NORMAL_SLEEP = 2100;
+        private const int CIRCUIT_BREAKER_MAX_SLEEP = 1000;
+
         protected Producer _producer;
         private Func<MessagesConfirmation, Task> _messageConfirmationHandler = null;
         private int _consecutiveErrors;
         private bool _circuitBreakerTripped = false;
-
-
-        /// <summary>
-        /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
-        /// </summary>
-        public event Action<MessagesConfirmation> ConfirmationErrorEvent;
+        private ConcurrentQueue<Message> _retryMessagesQueue;
+        private Thread _retryThread = null;
+        private readonly object _retryThreadLock = new object();
 
 
         /// <summary>
@@ -28,6 +30,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         public MqStreamProducer(string mqStreamName, string applicationName) : base(mqStreamName,applicationName,EnumMQStreamType.Producer)
         {
+            _retryMessagesQueue = new ConcurrentQueue<Message>();
         }
 
 
@@ -62,6 +65,13 @@ namespace SlugEnt.StreamProcessor
         public int CircuitBreakerStopLimit { get; set; }
 
 
+        /// <summary>
+        /// Returns the number of messages that are waiting in the Retry Queue - Messages that failed to send previously
+        /// </summary>
+        public int QueuedMessageCount
+        {
+            get { return _retryMessagesQueue.Count; }
+        }
 
         /// <summary>
         /// Total Number of Messages sent since startup.
@@ -73,14 +83,10 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
-        /// This method sets the method that is called when a message has been successfully confirmed.
-        /// <para>Only set this if you need to do something with the confirmed message.</para>
+        /// Whether this object should automatically resend failed confirmations.
+        /// <para>If you turn this off no failed messages will be resent automatically.</para>">
         /// </summary>
-        /// <param name="confirmationHandler"></param>
-        public void SetConfirmationHandler(Func<MessagesConfirmation, Task> confirmationHandler)
-        {
-            _messageConfirmationHandler = confirmationHandler;
-        }
+        public bool AutoRetryFailedConfirmations { get; set; } = true;
 
 
         /// <summary>
@@ -127,21 +133,63 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
+        /// Sends the message to RabbitMQ.
+        /// <remarks>This is broken out into its own method so it can be overriden for unit testing.</remarks>
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        protected virtual async Task SendMessageToMQ(Message message)
+        {
+            await _producer.Send(message);
+        }
+
+
+        /// <summary>
+        /// Sends the given message to the MQ Stream.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="bypassCircuitBreaker">If true, the Circuit breaker will be bypassed.  Used during Resends</param>
+        /// <returns></returns>
+        protected async Task SendMessage(Message message, bool bypassCircuitBreaker = false)
+        {
+            try
+            {
+                if (!CircuitBreakerTripped || bypassCircuitBreaker)
+                {
+                    await SendMessageToMQ(message);
+                    MessageCounter++;
+                }
+                else
+                {
+                    bool keepChecking = true;
+                    while (keepChecking)
+                    {
+                        if (CircuitBreakerTripped) Thread.Sleep(2000);
+                        else
+                        {
+                            await SendMessageToMQ(message);
+                            MessageCounter++;
+                            keepChecking = false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // TODO Log the error
+            }
+        }
+
+
+
+        /// <summary>
         /// Sends the given message to the MQ Stream.
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
         public async Task SendMessage(Message message)
         {
-            try
-            {
-                await _producer.Send(message);
-                MessageCounter++;
-            }
-            catch (Exception ex)
-            {
-                // TODO Log the error
-            }
+            await SendMessage(message, false);
         }
 
 
@@ -166,44 +214,77 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         protected Task OnConfirmation (MessagesConfirmation confirmation)
         {
-            if (confirmation.Status == ConfirmationStatus.Confirmed)
+            ConfirmationProcessor(confirmation.Status,confirmation.Messages);
+
+            return Task.CompletedTask;
+        }
+
+
+
+        /// <summary>
+        /// Processes the Confirmation.
+        /// <para>If caller has indicated they want successful confirmations then the event MessageConfirmationSuccess is raised</para>
+        /// <para>On errors the Event MessageConfirmationError is raised</para>
+        /// <remarks>This is broken out from OnConfirmation, because the MessagesConfirmation variable is unable to be moq'd for testing purposes</remarks>
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="messages"></param>
+        protected void ConfirmationProcessor(ConfirmationStatus status, List<Message> messages)
+        {
+            if (status == ConfirmationStatus.Confirmed)
             {
                 ConsecutiveErrors = 0;
-                if (_messageConfirmationHandler != null)
+                if (MessageConfirmationSuccess != null)
                 {
-                    _messageConfirmationHandler(confirmation);
+                    MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
+                    eventArgs.Status = status;
+                    eventArgs.Messages = messages;
+                    OnConfirmationSuccess(eventArgs);
                 }
             }
             else
             {
-                ConsecutiveErrors++;
-                ConfirmationErrorEvent(confirmation);
-/*                switch (confirmation.Status)
+
+                // Add message to retry Queue
+                foreach (var msg in messages)
                 {
-                    
-                    // There is an error during the sending of the message
-                    case ConfirmationStatus.WaitForConfirmation:
-                    case ConfirmationStatus.ClientTimeoutError
-                        : // The client didn't receive the confirmation in time. 
-                    // but it doesn't mean that the message was not sent
-                    // maybe the broker needs more time to confirm the message
-                    // see TimeoutMessageAfter in the ProducerConfig
-                    case ConfirmationStatus.StreamNotAvailable:
-                    case ConfirmationStatus.InternalError:
-                    case ConfirmationStatus.AccessRefused:
-                    case ConfirmationStatus.PreconditionFailed:
-                    case ConfirmationStatus.PublisherDoesNotExist:
-                    case ConfirmationStatus.UndefinedError:
-                    default:
-                        Console.WriteLine(
-                            $"Message  {confirmation.PublishingId} not confirmed. Error {confirmation.Status}");
-                        break;
+                    ConsecutiveErrors++;
+
+                    if (msg.ApplicationProperties != null)
+                    {
+                        if (msg.ApplicationProperties.ContainsKey(MQStreamBase.AP_RETRIES))
+                            msg.ApplicationProperties[MQStreamBase.AP_RETRIES] =
+                                (int)msg.ApplicationProperties[MQStreamBase.AP_RETRIES] + 1;
+                        else
+                            msg.ApplicationProperties.Add(MQStreamBase.AP_RETRIES, 1);
+                    }
+
+                    _retryMessagesQueue.Enqueue(msg);
                 }
-*/
+
+
+                // Start the Retry Thread if not already running.
+                if (AutoRetryFailedConfirmations)
+                {
+                    lock (_retryThreadLock)
+                    {
+                        if (_retryThread == null)
+                        {
+                            _retryThread = new Thread(ThreadedRetryMessages);
+                            _retryThread.IsBackground = true;
+                            _retryThread.Start();
+                        }
+                    }
+                }
+
+                MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
+                eventArgs.Status = status;
+                eventArgs.Messages = messages;
+                OnConfirmationError(eventArgs);
             }
 
-            return Task.CompletedTask;
         }
+
 
 
         /// <summary>
@@ -294,5 +375,103 @@ namespace SlugEnt.StreamProcessor
         }
 
 
+
+        private void ThreadedRetryMessages()
+        {
+            // We retry a max of 3 messages.
+            int attempts = 0;
+            int maxMessages = 3;
+            int sleepTime = CIRCUIT_BREAKER_MIN_SLEEP;
+            int stopThreadAfter = 0;
+
+            // TODO - Need to do something better than true
+            while (true)
+            {
+                bool moreMessages = ResendMessages(maxMessages);
+
+                if (moreMessages)
+                {
+                    // If Circuit Breaker still tripped then sleep an increasing amount of time.
+                    if (CircuitBreakerTripped)
+                    {
+                        sleepTime += sleepTime;
+                        if (sleepTime > CIRCUIT_BREAKER_MAX_SLEEP) sleepTime = CIRCUIT_BREAKER_MAX_SLEEP;
+                        Thread.Sleep(sleepTime);
+                    }
+                    else
+                    {
+                        // Supposedly the problem is fixed, so gradually send more messages and sleep small amount of time 
+                        maxMessages = 30;
+                        sleepTime = CIRCUIT_BREAKER_MIN_SLEEP;
+                        Thread.Sleep(1000);
+                    }
+                }
+                else
+                {
+                    lock (_retryThreadLock)
+                    {
+                        _retryThread = null;
+                        return;
+                    }
+                }
+                //Thread.Sleep(CIRCUIT_BREAKER_NORMAL_SLEEP);
+            }
+
+        }
+
+
+
+        private bool ResendMessages(int maxMessages)
+        {
+            for (int i = 0; i < maxMessages; i++)
+            {
+                // If no more messages available then exit
+                if (!_retryMessagesQueue.TryDequeue(out Message msg))
+                    return false;
+                else
+                    // Send the message
+                    SendMessage(msg,true);
+            }
+
+            return true;
+        }
+
+
+        //##############################################    ########################################################
+        //######################################################################################################
+        #region "Events"
+        // Message Confirmation Error Handling
+        /// <summary>
+        /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
+        /// </summary>
+        public event EventHandler<MessageConfirmationEventArgs> MessageConfirmationError;
+
+        protected virtual void OnConfirmationError(MessageConfirmationEventArgs e)
+        {
+            EventHandler<MessageConfirmationEventArgs> handler = MessageConfirmationError;
+            if (handler != null) handler(this, e);
+        }
+
+
+
+        // Message Confirmation Success Handling
+        /// <summary>
+        /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
+        /// </summary>
+        public event EventHandler<MessageConfirmationEventArgs> MessageConfirmationSuccess;
+
+        protected virtual void OnConfirmationSuccess(MessageConfirmationEventArgs e)
+        {
+            EventHandler<MessageConfirmationEventArgs> handler = MessageConfirmationSuccess;
+            if (handler != null) handler(this, e);
+        }
+        #endregion
+
+    }
+
+    public class MessageConfirmationEventArgs : EventArgs
+    {
+        public ConfirmationStatus Status { get; set; }
+        public List<Message> Messages { get; set; }
     }
 }

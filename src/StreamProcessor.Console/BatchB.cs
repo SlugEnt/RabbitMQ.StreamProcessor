@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RabbitMQ.Stream.Client.AMQP;
+using RabbitMQ.Stream.Client.Reliable;
 
 namespace StreamProcessor.Console
 {
@@ -15,7 +16,7 @@ namespace StreamProcessor.Console
     {
         private PubSubDemo streamB;
         private string _batch;
-
+        
         public BatchB()
         {
             streamB = new PubSubDemo("B", "appB", B_Producer, B_Consumer);
@@ -85,6 +86,20 @@ namespace StreamProcessor.Console
 
             return true;
         }
+
+
+        public ulong SuccessConfirmations { get; private set; }
+
+
+        /// <summary>
+        /// This is producer confirmations.  No need to do this if you aren't doing something with the info.
+        /// </summary>
+        /// <param name="confirmation"></param>
+        private void ReceiveConfirmation(MessagesConfirmation confirmation)
+        {
+            SuccessConfirmations++;
+        }
+
 
         private string NextBatch(string currentBatch)
         {
