@@ -59,11 +59,11 @@ namespace StreamProcessor.ConsoleScr.SampleB
             foreach (Stats stat in _stats)
             {
                 col++;
-                _table.UpdateCell(0, col, MarkUpValue(stat.SuccessMessages.ToString(), "green"));
-                _table.UpdateCell(1, col, MarkUpValue(stat.CreatedMessages.ToString(), "green"));
-                _table.UpdateCell(2, col, MarkUpValue(stat.SuccessMessages.ToString(), "green"));
-                _table.UpdateCell(3, col, MarkUpValue(stat.FailureMessages.ToString(), "red"));
-                _table.UpdateCell(4, col, MarkUpValue(stat.CircuitBreakerTripped.ToString(), "red"));
+                _table.UpdateCell(0, col, MarkUp(stat.SuccessMessages));
+                _table.UpdateCell(1, col, MarkUp(stat.CreatedMessages));
+                _table.UpdateCell(2, col, MarkUp(stat.SuccessMessages));
+                _table.UpdateCell(3, col, MarkUp(stat.FailureMessages,false));
+                _table.UpdateCell(4, col, MarkUp(stat.CircuitBreakerTripped));
 
             }
         }
@@ -77,6 +77,34 @@ namespace StreamProcessor.ConsoleScr.SampleB
 
             val += value + "[/]";
             return val;
+        }
+
+
+        private string MarkUp(ulong value, bool positiveGreen = true)
+        {
+            string color = "green";
+            if (!positiveGreen)
+            {
+                if (value > 0) color = "red";
+            } 
+
+            string val = "[" + color + "]";
+            val += value + "[/]";
+            return val;
+
+        }
+
+
+        private string MarkUp(bool value, bool trueGreen = true)
+        {
+            string color = "";
+            if (trueGreen) color = "green";
+            else color = "red";
+
+            string val = "[" + color + "]";
+            val += value + "[/]";
+            return val;
+
         }
 
         private void SaveContext(LiveDisplayContext liveDisplayContext)

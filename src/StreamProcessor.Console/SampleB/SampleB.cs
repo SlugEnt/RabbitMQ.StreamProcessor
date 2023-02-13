@@ -121,43 +121,48 @@ public class SampleB
     /// <param name="producer"></param>
     /// <param name="backgroundWorker"></param>
     /// <returns></returns>
-    protected async Task ProduceMessages(SampleB_Producer producer, BackgroundWorker backgroundWorker)
+    protected async Task ProduceMessages(SampleB_Producer producer)
     {
         // Initiate the Batch Number
         _batch = "A";
-        while (!backgroundWorker.CancellationPending)
+        while (!producer.IsCancelled)
         {
-            // Publish the messages
-            for (short i = 0; i < MessagesPerBatch; i++)
+            try
             {
-                string fullBatchId = _batch + i;
-                string msg = String.Format($"Id: {i} ");
-                Message message = producer.CreateMessage(msg);
-
-                string fullBatch = _batch.ToString() + i.ToString();
-                message.ApplicationProperties.Add(AP_BATCH, fullBatch);
-                message.Properties.ReplyTo = "scott";
-
-                _statsList[0].CreatedMessages++;
-
-                if (!producer.CircuitBreakerTripped)
-                    await producer.SendMessage(message);
-                else
+                // Publish the messages
+                for (short i = 0; i < MessagesPerBatch; i++)
                 {
-                    bool keepTrying = true;
-                    while (keepTrying)
+                    string fullBatchId = _batch + i;
+                    string msg = String.Format($"Id: {i} ");
+                    Message message = producer.CreateMessage(msg);
+
+                    string fullBatch = _batch.ToString() + i.ToString();
+                    message.ApplicationProperties.Add(AP_BATCH, fullBatch);
+                    message.Properties.ReplyTo = "scott";
+
+                    _statsList[0].CreatedMessages++;
+
+                    if (!producer.CircuitBreakerTripped)
+                        await producer.SendMessage(message);
+                    else
                     {
-                        if (producer.CircuitBreakerTripped) Thread.Sleep(2000);
-                        else await producer.SendMessage(message);
+                        bool keepTrying = true;
+                        while (keepTrying)
+                        {
+                            if (producer.IsCancelled) return;
+                            if (producer.CircuitBreakerTripped) Thread.Sleep(2000);
+                            else await producer.SendMessage(message);
+                        }
                     }
+
+                    if (producer.IsCancelled) return;
                 }
 
-                
+                _batch = HelperFunctions.NextBatch(_batch);
+                DisplayStats.Refresh();
+                Thread.Sleep(IntervalInSecondsBetweenBatches * 1000);
             }
-
-            _batch = HelperFunctions.NextBatch(_batch);
-            DisplayStats.Refresh();
-            Thread.Sleep(IntervalInSecondsBetweenBatches * 1000);
+            catch (Exception ex) { }
         }
     }
 
