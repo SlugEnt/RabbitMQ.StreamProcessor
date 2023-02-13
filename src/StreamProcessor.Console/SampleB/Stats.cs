@@ -46,5 +46,13 @@ namespace StreamProcessor.ConsoleScr.SampleB
 
         public List<ConfirmationMessage> ReceivedMessages { get; set; }
 
+
+        // Consumption Stats
+        public string ConsumeLastBatchReceived { get; set; }
+        public ulong ConsumeLastCheckpoint { get; set; }
+        public int ConsumeCurrentAwaitingCheckpoint { get; set; }
+
+
+
     }
 }

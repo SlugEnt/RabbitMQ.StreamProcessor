@@ -50,7 +50,9 @@ namespace StreamProcessor.ConsoleScr.SampleB
             _table.AddRow(MarkUpValue("Failure Msg", "green"));
             _table.AddRow(MarkUpValue("CB Tripped", "green"));
             _table.AddRow(MarkUpValue("Consumed Msg", "green"));
-
+            _table.AddRow(MarkUpValue("Last BatchRecv", "green"));
+            _table.AddRow(MarkUpValue("Last CheckPt", "green"));
+            _table.AddRow(MarkUpValue("Await CheckPt", "green"));
         }
 
         private void AddColumnsForStats()
@@ -59,12 +61,16 @@ namespace StreamProcessor.ConsoleScr.SampleB
             foreach (Stats stat in _stats)
             {
                 col++;
-                _table.UpdateCell(0, col, MarkUp(stat.SuccessMessages));
-                _table.UpdateCell(1, col, MarkUp(stat.CreatedMessages));
-                _table.UpdateCell(2, col, MarkUp(stat.SuccessMessages));
-                _table.UpdateCell(3, col, MarkUp(stat.FailureMessages,false));
-                _table.UpdateCell(4, col, MarkUp(stat.CircuitBreakerTripped));
-
+                int row = 0;
+                _table.UpdateCell(row++, col, MarkUp(stat.SuccessMessages));
+                _table.UpdateCell(row++, col, MarkUp(stat.CreatedMessages));
+                _table.UpdateCell(row++, col, MarkUp(stat.SuccessMessages));
+                _table.UpdateCell(row++, col, MarkUp(stat.FailureMessages,false));
+                _table.UpdateCell(row++, col, MarkUp(stat.CircuitBreakerTripped));
+                _table.UpdateCell(row++, col, MarkUp(stat.ConsumedMessages));
+                _table.UpdateCell(row++, col, MarkUpValue(stat.ConsumeLastBatchReceived,"grey"));
+                _table.UpdateCell(row++, col, MarkUp(stat.ConsumeLastCheckpoint));
+                _table.UpdateCell(row++, col, MarkUp(stat.ConsumeCurrentAwaitingCheckpoint));
             }
         }
 
@@ -94,6 +100,19 @@ namespace StreamProcessor.ConsoleScr.SampleB
 
         }
 
+        private string MarkUp(int value, bool positiveGreen = true)
+        {
+            string color = "green";
+            if (!positiveGreen)
+            {
+                if (value > 0) color = "red";
+            }
+
+            string val = "[" + color + "]";
+            val += value + "[/]";
+            return val;
+
+        }
 
         private string MarkUp(bool value, bool trueGreen = true)
         {

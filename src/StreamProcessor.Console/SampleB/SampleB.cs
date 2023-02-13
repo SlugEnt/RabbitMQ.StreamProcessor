@@ -18,6 +18,12 @@ public class SampleB
 
     private string _streamName = "Sample.B";
     private SampleB_Producer _producerB;
+
+    private SampleB_Consumer _consumerB_slow;
+    private string _consumerB_slow_name = "ConBSlow";
+
+    
+    
     private string _batch;
     private int _messagesInBatch;
     private short _consoleStatsStartLine = 4;
@@ -31,14 +37,15 @@ public class SampleB
         // Build a producer
         _producerB = new SampleB_Producer(_streamName, "Sample.B.Producer", ProduceMessages);
         _producerB.SetStreamLimitsRaw(1000, 100, 900);
-        //        _producerB.SetStreamLimits(3, 1, 36);
         _messagesInBatch = messagesInBatch;
         _producerB.MessageConfirmationError += MessageConfirmationError;
         _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;
 
+        _consumerB_slow = new SampleB_Consumer(_streamName, _consumerB_slow_name, ConsumeSlow);
+        _consumerB_slow.CheckPointSaved += OnCheckPointSaved;
+
         BuildStatsObjects();
         
-
 
         DisplayStats = new DisplayStats(_statsList);
         
@@ -51,7 +58,7 @@ public class SampleB
     {
         _statsList = new List<Stats>();
         Stats producerStats = new Stats("Producer");
-        Stats consumerStatsA = new Stats("ConsA");
+        Stats consumerStatsA = new Stats("Cons Slow");
         Stats consumerStatsB = new Stats("ConsB");
         Stats consumerStatsC = new Stats("ConsC");
         Stats consumerStatsD = new Stats("ConsD");
@@ -73,12 +80,13 @@ public class SampleB
     public short MessagesPerBatch { get; set; } = 6;
 
 
-    public int IntervalInSecondsBetweenBatches { get; set; } = 30;
+    public int IntervalInSecondsBetweenBatches { get; set; } = 3;
 
 
     public async Task Start()
     {
-        _producerB.Start();
+        await _producerB.Start();
+        await _consumerB_slow.Start();
 
         bool keepProcessingB = true;
         while (keepProcessingB)
@@ -119,7 +127,6 @@ public class SampleB
     /// Produces Messages
     /// </summary>
     /// <param name="producer"></param>
-    /// <param name="backgroundWorker"></param>
     /// <returns></returns>
     protected async Task ProduceMessages(SampleB_Producer producer)
     {
@@ -179,6 +186,7 @@ public class SampleB
         HelperFunctions.WriteInColor($"ConfErr:  Msg Batch:  {batch} ", ConsoleColor.Red);
     }
 
+
     private void MessageConfirmationSuccess(object sender, MessageConfirmationEventArgs e)
     {
         string batch = GetBatch(e);
@@ -192,6 +200,20 @@ public class SampleB
     }
 
 
+    private void OnCheckPointSaved(object sender, MqStreamCheckPointEventArgs e)
+    {
+        _statsList[1].ConsumeLastCheckpoint = e.CommittedOffset;
+    }
+
+
+    private async Task<bool> ConsumeSlow(Message message)
+    {
+        _statsList[1].ConsumedMessages++;
+        _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+//        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.LastCheckpointOffset;
+        _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerB_slow.OffsetCounter;
+        return true;
+    }
     
 
 

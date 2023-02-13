@@ -40,6 +40,12 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
+        /// The offset of the last time a checkpoint was performed.  Zero indicates no checkpoint has been done yet.
+        /// </summary>
+        public ulong LastCheckpointOffset { get; private set; }
+
+
+        /// <summary>
         /// The total number of messages consumed.
         /// </summary>
         public ulong MessagesConsumed
@@ -58,7 +64,7 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// How many messages need to be consumed before Saving the offset.  IF you wish more advanced, you will have to create your own check method.
         /// </summary>
-        public int OffsetCheckPointLimit { get; set; } = 80;
+        public int OffsetCheckPointLimit { get; set; } = 20;
 
 
 
@@ -120,8 +126,15 @@ namespace SlugEnt.StreamProcessor
             // Save last offset so we don't need to deal with thread locking.
             ulong last = LastOffset;
             await _rawConsumer.StoreOffset(last);
+            LastCheckpointOffset = last;
             OffsetCounter = 0;
-            CheckPointPerformedEvent($"Checkpoint on Stream {MQStreamName} with Reference [{ApplicationName}] was set.",last);
+
+            
+            MqStreamCheckPointEventArgs eventArgs = new MqStreamCheckPointEventArgs();
+            eventArgs.ApplicationName = ApplicationName;
+            eventArgs.StreamName = MQStreamName;
+            eventArgs.CommittedOffset = last;
+            OnCheckPointSaved(eventArgs);
         }
 
 
@@ -154,6 +167,39 @@ namespace SlugEnt.StreamProcessor
             await Task.CompletedTask;
             
         }
-        
+
+
+
+        //##############################################    ########################################################
+        //######################################################################################################
+        #region "Events"
+        // Message Confirmation Error Handling
+        /// <summary>
+        /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
+        /// </summary>
+        public event EventHandler<MqStreamCheckPointEventArgs> CheckPointSaved;
+
+        protected virtual void OnCheckPointSaved(MqStreamCheckPointEventArgs e)
+        {
+            EventHandler<MqStreamCheckPointEventArgs> handler = CheckPointSaved;
+            if (handler != null) handler(this, e);
+        }
+
+
+
+        #endregion
+
     }
+
+
+    /// <summary>
+    /// Event Args for a CheckPoint Event
+    /// </summary>
+    public class MqStreamCheckPointEventArgs : EventArgs
+    {
+        public ulong CommittedOffset { get; set; }
+        public string ApplicationName { get; set; }
+        public string StreamName { get; set; }
+    }
+
 }

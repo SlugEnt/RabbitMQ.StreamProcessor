@@ -41,7 +41,7 @@ public class SampleB_Producer : MqStreamProducer
     public async Task Stop()
     {
         IsCancelled = true;
-
+        
         // Print Final Totals
         System.Console.WriteLine("Messages:");
         System.Console.WriteLine($"  Produced:    {MessageCounter}");
