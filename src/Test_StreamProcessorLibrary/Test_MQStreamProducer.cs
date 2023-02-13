@@ -211,6 +211,50 @@ public class Test_MQStreamProducer
     }
 
 
+    [Test]
+    public void CircuitBreakerResetsAfterSuccessfulSend()
+    {
+        MQStreamProducer_TST producerTst = new MQStreamProducer_TST("abc", "a1");
+        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.AutoRetryFailedConfirmations = false;
+
+        // B - Send 3 messages - All Failures to trip Circuit Breaker
+        int qtyToSend = 3;
+        (int nextMessageNum, int count) = SendAndConfirmTestMessages(producerTst, qtyToSend, 1, ConfirmationStatus.ClientTimeoutError);
+        Assert.IsTrue(producerTst.CircuitBreakerTripped, "B10:  Circuit Breaker was not tripped. Should have.");
+
+
+        // C - Retry to send messages
+        producerTst.AutoRetryFailedConfirmations = true;
+        producerTst.TST_TurnAutoRetryProcessOn();
+
+        // Sleep to allow the retry thread to do its thing.
+        Thread.Sleep(500);
+
+        // Send the command to publish the messages BUT SUCCESSFULLY (Note, this is only a test capability)
+        count = producerTst.TST_ReturnProducerConfirmations(-1, ConfirmationStatus.Confirmed);
+        Thread.Sleep(100);
+        Assert.IsFalse(producerTst.CircuitBreakerTripped, "C100:  Circuit Breaker was still tripped. Should have reset.");
+    }
+
+
+    [Test]
+    public void CheckCircuitBreakerResets()
+    {
+        MQStreamProducer_TST producerTst = new MQStreamProducer_TST("abc", "a1");
+        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.AutoRetryFailedConfirmations = false;
+
+        // B - Manually set CircuitBreaker
+        producerTst.TST_ManuallyTripCircuitBreaker();
+        Assert.IsTrue(producerTst.CircuitBreakerTripped, "B10:  Circuit Breaker was not tripped. Should have.");
+
+
+        // C - Check it, it should reset
+        bool result = producerTst.CheckCircuitBreaker();
+        Assert.IsFalse(result,"C100 - Should have returned Circuit Breaker Status");
+        Assert.IsFalse(producerTst.CircuitBreakerTripped,"C110: Circuit Breaker should not be tripped");
+    }
 
 
     /// <summary>

@@ -107,9 +107,9 @@ public class SampleA
     private string GetBatch(MessageConfirmationEventArgs e)
     {
         string batch = "";
-        if (e.Messages[0].ApplicationProperties.ContainsKey(AP_BATCH))
+        if (e.Message.ApplicationProperties.ContainsKey(AP_BATCH))
         {
-            batch = (string)e.Messages[0].ApplicationProperties[AP_BATCH];
+            batch = (string)e.Message.ApplicationProperties[AP_BATCH];
         }
         else batch = "Not Specified";
 

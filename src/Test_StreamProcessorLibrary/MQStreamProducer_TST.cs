@@ -32,7 +32,16 @@ public class MQStreamProducer_TST : MqStreamProducer
     {
         TurnAutoRetryThreadOn();
     }
-    
+
+
+    /// <summary>
+    /// Allows caller to manually trip the circuit breaker
+    /// </summary>
+    public void TST_ManuallyTripCircuitBreaker()
+    {
+        CircuitBreakerTripped = true;
+    }
+
 
     // Create an ovverride for the SendMessageToMQ so we do not need a running MQ instance.
     protected override async Task SendMessageToMQ(Message message)

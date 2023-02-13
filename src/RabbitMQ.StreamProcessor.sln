@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamProcessor.Console", "StreamProcessor.Console\StreamProcessor.Console.csproj", "{A158EFD1-DE4E-4186-A6CB-BA17A881BEB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamProcessor.ConsoleScr", "StreamProcessor.Console\StreamProcessor.ConsoleScr.csproj", "{A158EFD1-DE4E-4186-A6CB-BA17A881BEB2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamProcessor.Library", "StreamProcessor.Library\StreamProcessor.Library.csproj", "{767A5675-1C41-4D6D-836C-4C76F4E310D8}"
 EndProject

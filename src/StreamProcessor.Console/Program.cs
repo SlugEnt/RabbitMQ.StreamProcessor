@@ -13,7 +13,8 @@ using SlugEnt.StreamProcessor;
 using System.Xml.Linq;
 using StreamProcessor.Console;
 using StreamProcessor.Console.SampleA;
-
+using StreamProcessor.Console.SampleB;
+using StreamProcessor.ConsoleScr.SampleB;
 
 Console.WriteLine("MQ Stream Sender");
 
@@ -40,7 +41,7 @@ Console.WriteLine(" ( 1 )  sample_stream - with Defined Queue Settings.");
 Console.WriteLine(" ( 2 )  s2 - with no defined Queue Settings.");
 Console.WriteLine(" ( 3 )  s3.1MinQueue - Very small Queue size and age limits.");
 Console.WriteLine(" ( A )  Sample A Logic.");
-Console.WriteLine(" ( B )  Batch B Logic.");
+Console.WriteLine(" ( B )  Sample B - Multiple Different Simultaneous Consumers");
 Console.WriteLine(" ( 0 )  Test Batches Logic.");
 ConsoleKeyInfo key = Console.ReadKey();
 
@@ -58,6 +59,12 @@ switch (key.Key)
         sampleA.Start();
         break;
 
+    case ConsoleKey.B:
+        SampleB sampleB = new SampleB(4);
+        
+        sampleB.Start();
+        break;
+
     case ConsoleKey.D0:
         string batch = "A";
         for (int j = 0; j < 30; j++)
@@ -69,33 +76,6 @@ switch (key.Key)
 
             }
         }
-
-        break;
-
-    case ConsoleKey.B:
-        BatchB b = new BatchB();
-        b.Execute();
-        bool keepProcessingB = true;
-        while (keepProcessingB)
-        {
-            if (Console.KeyAvailable)
-            {
-                ConsoleKeyInfo d1KeyInfo = Console.ReadKey();
-                if (d1KeyInfo.Key == ConsoleKey.X)
-                {
-                    keepProcessingB = false;
-                    await b.Stop();
-                }
-            }
-
-            //streamB.CheckStatus();
-            Thread.Sleep(1000);
-
-        }
-
-        System.Console.WriteLine($"Stream B has completed all processing.");
-
-
 
         break;
 

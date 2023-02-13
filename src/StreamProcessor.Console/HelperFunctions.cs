@@ -57,6 +57,5 @@ public static class HelperFunctions
         System.Console.ForegroundColor = foregroundColor;
         System.Console.WriteLine(text);
         System.Console.ForegroundColor = oldColor;
-        
     }
 }

@@ -57,6 +57,10 @@ namespace SlugEnt.StreamProcessor
         public bool CircuitBreakerTripped
         {
             get { return _circuitBreakerTripped; }
+            protected set
+            {
+                _circuitBreakerTripped = value;
+            }
         }
 
 
@@ -89,12 +93,30 @@ namespace SlugEnt.StreamProcessor
             private set;
         }
 
+        public ulong Stat_MessagesErrored { get; private set; }
 
         /// <summary>
         /// Whether this object should automatically resend failed confirmations.
         /// <para>If you turn this off no failed messages will be resent automatically.</para>">
         /// </summary>
         public bool AutoRetryFailedConfirmations { get; set; } = true;
+
+
+
+        /// <summary>
+        /// Performs a check to see if the circuit breaker should be reset.  Should not normally be needed
+        /// But if for some reason the program gets stuck the caller should check this periodically.
+        /// </summary>
+        /// <returns></returns>
+        public bool CheckCircuitBreaker()
+        {
+            if (! CircuitBreakerTripped) return CircuitBreakerTripped;
+
+            // Are there any messages awaiting to be resent?
+            if (_retryMessagesQueue.IsEmpty) CircuitBreakerTripped = false;
+
+            return CircuitBreakerTripped;
+        }
 
 
         /// <summary>
@@ -244,19 +266,21 @@ namespace SlugEnt.StreamProcessor
                 if (status == ConfirmationStatus.Confirmed)
                 {
                     ConsecutiveErrors = 0;
+                    CircuitBreakerTripped = false;
                     Stat_MessagesSuccessfullyConfirmed++;
 
                     if (MessageConfirmationSuccess != null)
                     {
                         MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
                         eventArgs.Status = status;
-                        eventArgs.Messages = messages;
+                        eventArgs.Message = message;
                         OnConfirmationSuccess(eventArgs);
                     }
                 }
                 else
                 {
                     ConsecutiveErrors++;
+                    Stat_MessagesErrored++;
                     newErrors = true;
 
                     if (message.ApplicationProperties != null)
@@ -272,7 +296,7 @@ namespace SlugEnt.StreamProcessor
 
                     MessageConfirmationEventArgs eventArgs = new MessageConfirmationEventArgs();
                     eventArgs.Status = status;
-                    eventArgs.Messages = messages;
+                    eventArgs.Message = message;
                     OnConfirmationError(eventArgs);
 
                 }
@@ -500,6 +524,6 @@ namespace SlugEnt.StreamProcessor
     public class MessageConfirmationEventArgs : EventArgs
     {
         public ConfirmationStatus Status { get; set; }
-        public List<Message> Messages { get; set; }
+        public Message Message { get; set; }
     }
 }
