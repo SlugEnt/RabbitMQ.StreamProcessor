@@ -19,9 +19,12 @@ public class SampleB
     private string _streamName = "Sample.B";
     private SampleB_Producer _producerB;
 
+    // Consumer - Slow
     private SampleB_Consumer _consumerB_slow;
     private string _consumerB_slow_name = "ConBSlow";
 
+    private SampleB_Consumer _consumerB_Fast;
+    private string _consumerB_fast_name = "ConBFast";
     
     
     private string _batch;
@@ -42,7 +45,11 @@ public class SampleB
         _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;
 
         _consumerB_slow = new SampleB_Consumer(_streamName, _consumerB_slow_name, ConsumeSlow);
-        _consumerB_slow.CheckPointSaved += OnCheckPointSaved;
+        _consumerB_slow.CheckPointSaved += OnCheckPointSavedSlow;
+
+        _consumerB_Fast = new SampleB_Consumer(_streamName, _consumerB_fast_name, ConsumeFast);
+        _consumerB_Fast.CheckPointSaved += OnCheckPointSavedFast;
+
 
         BuildStatsObjects();
         
@@ -59,7 +66,7 @@ public class SampleB
         _statsList = new List<Stats>();
         Stats producerStats = new Stats("Producer");
         Stats consumerStatsA = new Stats("Cons Slow");
-        Stats consumerStatsB = new Stats("ConsB");
+        Stats consumerStatsB = new Stats("Cons Fast");
         Stats consumerStatsC = new Stats("ConsC");
         Stats consumerStatsD = new Stats("ConsD");
 
@@ -87,6 +94,8 @@ public class SampleB
     {
         await _producerB.Start();
         await _consumerB_slow.Start();
+        await _consumerB_Fast.Start();
+
 
         bool keepProcessingB = true;
         while (keepProcessingB)
@@ -107,7 +116,7 @@ public class SampleB
 
             UpdateStats();
             DisplayStats.Refresh();
-            Thread.Sleep(3000);
+            Thread.Sleep(1000);
 
         }
 
@@ -200,21 +209,48 @@ public class SampleB
     }
 
 
-    private void OnCheckPointSaved(object sender, MqStreamCheckPointEventArgs e)
+    private void OnCheckPointSavedSlow(object sender, MqStreamCheckPointEventArgs e)
     {
         _statsList[1].ConsumeLastCheckpoint = e.CommittedOffset;
     }
 
 
+    private void OnCheckPointSavedFast(object sender, MqStreamCheckPointEventArgs e)
+    {
+        _statsList[2].ConsumeLastCheckpoint = e.CommittedOffset;
+    }
+
+
+    /// <summary>
+    /// The Consumer Slow Method
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     private async Task<bool> ConsumeSlow(Message message)
     {
         _statsList[1].ConsumedMessages++;
         _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
 //        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.LastCheckpointOffset;
         _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerB_slow.OffsetCounter;
+        // Simulate slow
+        Thread.Sleep(1500);
         return true;
     }
-    
+
+
+    /// <summary>
+    /// The Consumer Fast Method
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    private async Task<bool> ConsumeFast(Message message)
+    {
+        _statsList[2].ConsumedMessages++;
+        _statsList[2].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+        _statsList[2].ConsumeCurrentAwaitingCheckpoint = _consumerB_Fast.OffsetCounter;
+        return true;
+    }
+
 
 
 
