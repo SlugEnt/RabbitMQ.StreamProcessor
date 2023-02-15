@@ -1,9 +1,19 @@
 ﻿using SlugEnt.StreamProcessor;
 using System.ComponentModel;
+using Microsoft.Extensions.Logging;
+using StreamProcessor.Console.SampleA;
 
 namespace StreamProcessor.Console.SampleB;
 
-public class SampleB_Producer : MqStreamProducer
+public interface ISampleB_Producer : IMqStreamProducer
+{
+    public Task Start();
+    public Task Stop();
+    public void SetProducerMethod(Func<SampleB_Producer, Task> method);
+}
+
+
+public class SampleB_Producer : MqStreamProducer, IMqStreamProducer, ISampleB_Producer
 {
     private Func<SampleB_Producer, Task> _produceMessagesMethod;
     private Thread _workerThread;
@@ -16,10 +26,16 @@ public class SampleB_Producer : MqStreamProducer
     /// <param name="mqStreamName"></param>
     /// <param name="appName"></param>
     /// <param name="produceMessagesMethod">Method that should be called to produce messages</param>
-    public SampleB_Producer(string mqStreamName, string appName,
-        Func<SampleB_Producer, Task> produceMessagesMethod) : base(mqStreamName, appName)
+    public SampleB_Producer(ILogger<SampleB_Producer> logger) : base(logger)
     {
-        _produceMessagesMethod = produceMessagesMethod;
+        //_produceMessagesMethod = produceMessagesMethod;
+    }
+
+
+
+    public void SetProducerMethod(Func<SampleB_Producer, Task> method)
+    {
+        _produceMessagesMethod = method;
     }
 
 

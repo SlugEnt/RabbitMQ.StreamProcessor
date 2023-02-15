@@ -1,4 +1,7 @@
-﻿using SlugEnt.StreamProcessor;
+﻿using Microsoft.Extensions.Logging;
+using SlugEnt.StreamProcessor;
+using StreamProcessor.Console.SampleB;
+using StreamProcessor.ConsoleScr.SampleB;
 using System.ComponentModel;
 
 namespace StreamProcessor.Console.SampleA;
@@ -17,11 +20,16 @@ public class SampleA_Producer : MqStreamProducer
     /// <param name="mqStreamName"></param>
     /// <param name="appName"></param>
     /// <param name="produceMessagesMethod">Method that should be called to produce messages</param>
-    public SampleA_Producer(string mqStreamName, string appName,
-        Func<SampleA_Producer, BackgroundWorker, Task> produceMessagesMethod) : base(mqStreamName, appName)
+    public SampleA_Producer(ILogger<SampleA_Producer> logger) : base(logger) //string streamName, string appName, Func<Message, Task<bool>> consumptionHandler, ILogger<SampleB_Consumer> logger) : base(streamName, appName)
     {
-        _produceMessagesMethod = produceMessagesMethod;
     }
+
+
+    public void SetProducerMethod(Func<SampleA_Producer, BackgroundWorker, Task> method)
+    {
+        _produceMessagesMethod = method;
+    }
+
 
 
 
@@ -42,6 +50,7 @@ public class SampleA_Producer : MqStreamProducer
         _backgroundWorkerProducer.WorkerSupportsCancellation = true;
         _backgroundWorkerProducer.RunWorkerAsync();
     }
+
 
 
     public async Task Stop()

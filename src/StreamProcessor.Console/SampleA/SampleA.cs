@@ -18,12 +18,13 @@ public class SampleA
     public SampleA(int messagesInBatch = 3)
     {
         // Build a producer
-        _producerA = new SampleA_Producer(_streamName, "Sample.A.Producer", ProduceMessages);
+ /*       _producerA = new SampleA_Producer(_streamName, "Sample.A.Producer", ProduceMessages);
         _producerA.SetStreamLimitsRaw(1000, 100, 900);
 //        _producerA.SetStreamLimits(3, 1, 36);
         _messagesInBatch = messagesInBatch;
         _producerA.MessageConfirmationError += MessageConfirmationError;
         _producerA.MessageConfirmationSuccess += MessageConfirmationSuccess;
+ */
     }
 
 

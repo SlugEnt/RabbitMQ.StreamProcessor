@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using RabbitMQ.Stream.Client;
 using System.Net;
+using Microsoft.Extensions.Logging;
 
 namespace SlugEnt.StreamProcessor
 {
@@ -9,30 +10,40 @@ namespace SlugEnt.StreamProcessor
     /// </summary>
     public abstract class MQStreamBase
     {
-        protected readonly string _mqStreamName;
+        protected string _mqStreamName = "";
         protected StreamSystemConfig _config;
         protected StreamSystem _streamSystem;
         protected StreamSpec _streamSpec;
-        protected readonly string _appName;
+        protected string _appName;
+        protected ILogger<MQStreamBase> _logger;
+
+
+        public MQStreamBase(ILogger<MQStreamBase> iLogger, EnumMQStreamType mqStreamType)
+        {
+            _logger = iLogger;
+            MqStreamType = mqStreamType;
+        }
 
 
 
         /// <summary>
-        /// Constructor
+        /// Initializes the Stream
         /// </summary>
         /// <param name="mqStreamName"></param>
         /// <param name="applicationName">This is the name of the application that owns this Stream process.
         /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
         /// <param name="mqStreamType">The type of MQ Stream</param>
-        public MQStreamBase (string mqStreamName, string applicationName,EnumMQStreamType mqStreamType)
+        public void Initialize(string mqStreamName, string applicationName)
         {
+            if (_mqStreamName != string.Empty) throw new ArgumentException("A Stream can only be initialized once.");
+
             _mqStreamName = mqStreamName;
-            MqStreamType = mqStreamType;
+            
             _appName = applicationName;
 
-            if (applicationName == string.Empty) 
+            if (applicationName == string.Empty)
                 throw new ArgumentException(
-                "The ApplicationName must be specified and it must be unique for a given application");
+                    "The ApplicationName must be specified and it must be unique for a given application");
 
 
             IPEndPoint a = Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
@@ -49,6 +60,9 @@ namespace SlugEnt.StreamProcessor
                 },
             };
         }
+
+
+
 
 
         /// <summary>
@@ -83,22 +97,22 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Whether the stream is connected
         /// </summary>
-        public bool IsConnected { get; protected set; }
+        public bool IsConnected { get; protected set; } = false;
 
         /// <summary>
         /// Maximum length this stream can be.  Only applicable on newly published streams
         /// </summary>
-        public ulong MaxLength { get; set; }
+        public ulong MaxLength { get; set; } = 0;
 
         /// <summary>
         /// Maximum segment size for this stream
         /// </summary>
-        public int MaxSegmentSize { get; set; }
+        public int MaxSegmentSize { get; set; } = 0;
 
         /// <summary>
         /// Max Age of records in seconds
         /// </summary>
-        public ulong MaxAge { get; set; }
+        public ulong MaxAge { get; set; } = 0;
 
 
 

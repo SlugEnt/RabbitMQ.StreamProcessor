@@ -26,6 +26,9 @@ namespace StreamProcessor.ConsoleScr.SampleB
 
             BuildColumns();
             AddRows();
+            
+            System.Console.Clear();
+            AnsiConsole.Write(_table);
         }
 
 
@@ -126,19 +129,13 @@ namespace StreamProcessor.ConsoleScr.SampleB
 
         }
 
-        private void SaveContext(LiveDisplayContext liveDisplayContext)
-        {
-
-            _liveDisplayContext = liveDisplayContext;
-            _liveDisplayContext.Refresh();
-        }
 
         public void Refresh()
         {
-            System.Console.Clear();
             AddColumnsForStats();
+            System.Console.Clear();
             AnsiConsole.Write(_table);
-            //    _liveDisplayContext.Refresh();
+            
         }
     }
 }

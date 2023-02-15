@@ -2,6 +2,7 @@
 using SlugEnt.StreamProcessor;
 using System.Collections.Concurrent;
 using RabbitMQ.Stream.Client;
+using Microsoft.Extensions.Logging;
 
 namespace Test_StreamProcessorLibrary;
 
@@ -11,18 +12,31 @@ namespace Test_StreamProcessorLibrary;
 /// For instance, SendingMessages actually just sends to a queue.
 /// Also some classes are unable to be instantiated outside the RabbitMQ Streams client.  This bypasses that requirement.
 /// </summary>
-public class MQStreamProducer_TST : MqStreamProducer
+public class MqTesterProducer : MqStreamProducer
 {
     // Simulating MQ
     private Queue<Message> _messagesProduced = new Queue<Message>();
 
 
-    public MQStreamProducer_TST(string streamName, string appName) : base(streamName, appName)
+    /// <summary>
+    /// Simulates a MQ Stream instance.  Can publish, publish confirm and consume messages.
+    /// </summary>
+    /// <param name="streamName"></param>
+    /// <param name="appName"></param>
+    public MqTesterProducer(ILogger<MqTesterProducer> logger) : base(logger)
     {
         // Automatically assume we are connected.
         IsConnected = true;
     }
 
+
+    /// <summary>
+    /// This is needed to allow the Test Consumer to get the messages that are produced.
+    /// </summary>
+    public Queue<Message> MessageQueue
+    {
+        get { return _messagesProduced; }
+    }
 
     /// <summary>
     /// Turns the auto retry process thread on
@@ -83,4 +97,5 @@ public class MQStreamProducer_TST : MqStreamProducer
         ConfirmationProcessor(statusToBeReturned, messages);
         return counter;
     }
+
 }
