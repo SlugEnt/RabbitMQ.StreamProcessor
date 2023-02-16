@@ -6,6 +6,7 @@ High Level library for interacting with RabbitMQ streams using the base library 
 
 This library provides a higher level interface for working with RabbitMQ Streams that makes its use in applications quick and very easy.
 
+# Features
 It supports a number of features out of the box including:
 * Ability to automatically perform Offset Storage in the MQ Stream for the specific application after a given number of messages have been received.
 * Provide statistics on number of messages received / produced / successful / failures
@@ -34,3 +35,63 @@ It supports a number of features out of the box including:
 * Multi-Threaded
 
 
+
+# Sample Use
+```
+    string _streamName = "Sample.B";
+    ISampleB_Producer _producerB;
+    
+    StreamSystemConfig config = new StreamSystemConfig();
+
+    _producerB = _serviceProvider.GetService<ISampleB_Producer>();
+
+    // Initialize the Stream.  We will access _streamName and the Application name is "producerB"
+    _producerB.Initialize(_streamName,"producerB",config);
+
+    // Set the method that generates Messages
+    _producerB.SetProducerMethod(ProduceMessages);
+
+    // Create a stream that has max size of 1000 bytes, max segment size of 100 bytes and max age of 900 seconds
+    _producerB.SetStreamLimitsRaw(1000, 100, 900);
+
+    // Define Event handlers.  This is optional
+    _producerB.MessageConfirmationError += MessageConfirmationError;
+    _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;
+
+    // Start producing messages
+    await _producerB.Start();
+
+
+    // Build a consumer
+    _consumerB_slow = _serviceProvider.GetService<ISampleB_Consumer>();
+    _consumerB_slow.Initialize(_streamName, "consumer_slow",config);
+    _consumerB_slow.SetConsumptionHandler(ConsumeSlow);
+
+    // Optional if you want to know when a Checkpoint has occurred
+    _consumerB_slow.EventCheckPointSaved += OnEventCheckPointSavedSlow;
+
+
+    // Start Consuming messages
+    await _consumerB_slow.Start();
+
+
+    // Produce Messages Method
+    protected async Task ProduceMessages(SampleB_Producer producer)
+    {
+        Message message = producer.CreateMessage("hello");
+        await producer.SendMessage(message);
+    }
+
+
+    // Consume Messages method
+    private async Task<bool> ConsumeSlow(Message message)
+    {
+        // Do something with Message
+        string msg = Encoding.Default.GetString(message.Data.Contents.ToArray());
+        Console.WriteLine("msg: ", msg);
+
+        // Simulate slow
+        Thread.Sleep(1500);
+        return true;
+    }
+```

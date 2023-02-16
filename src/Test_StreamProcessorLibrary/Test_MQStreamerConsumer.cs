@@ -1,5 +1,7 @@
 ﻿using AutoFixture;
 using AutoFixture.NUnit3;
+using NUnit.Framework.Internal;
+using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 
 namespace Test_StreamProcessorLibrary;
@@ -9,16 +11,30 @@ namespace Test_StreamProcessorLibrary;
 public class Test_MQStreamerConsumer
 {
 
+    [Test]
+    public async Task DecodeMessage()
+    {
+        string messageText = "Hello";
+        MqTesterProducer producerTst = Helpers.SetupProducer();
+
+        Message newMessage = producerTst.CreateMessage(messageText);
+
+        // Decode Mesage
+        MqTesterConsumer consumerTst = Helpers.SetupConsumer();
+        string value = consumerTst.DecodeMessage(newMessage);
+        Assert.AreEqual(messageText,value,"A10:");
+
+    }
 
 
     [Test]
     public async Task CheckPointSetsDateTime()
     {
-        // Build a producer and consumer
+        // Build a consumer
         MqTesterConsumer consumerTst = Helpers.SetupConsumer();
 
         
-        // B - Consume the messages 
+        // B - Pretend we Consumed
         DateTime currentDateTime = DateTime.Now;
         Assert.LessOrEqual(consumerTst.CheckpointLastDateTime,currentDateTime,"B120:");
 

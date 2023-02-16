@@ -344,6 +344,18 @@ namespace SlugEnt.StreamProcessor
         }
 
 
+        /// <summary>
+        /// Decodes the actual message bode from the Message object
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        public string DecodeMessage(Message msg)
+        {
+            return Encoding.Default.GetString(msg.Data.Contents.ToArray());
+        }
+
+
+
         //##############################################    ########################################################
         //######################################################################################################
         #region "Events"
