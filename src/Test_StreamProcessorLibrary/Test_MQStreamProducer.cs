@@ -28,7 +28,6 @@ public class Test_MQStreamProducer
     public void CircuitBreakerTrips(int limit, int messagesToSend, bool circuitBreakerShouldTrip)
     {
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        //producerTst.TST_SetIsConnected(false);
         producerTst.CircuitBreakerStopLimit = limit;
 
 

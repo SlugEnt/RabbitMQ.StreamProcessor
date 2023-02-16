@@ -1,4 +1,7 @@
 # RabbitMQ.StreamProcessor
+
+![Build Test Event](https://github.com/slugent/RabbitMQ.StreamProcessor/actions/workflows/buildtest.yml/badge.svg?event=push)
+
 High Level library for interacting with RabbitMQ streams using the base library --> [rabbitmq-stream-dotnet-client](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client)
 
 This library provides a higher level interface for working with RabbitMQ Streams that makes its use in applications quick and very easy.
