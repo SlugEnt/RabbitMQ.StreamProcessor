@@ -8,6 +8,7 @@ using SlugEnt.StreamProcessor;
 using StreamProcessor.Console;
 using StreamProcessor.Console.SampleB;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 
 namespace StreamProcessor.ConsoleScr.SampleB;
 
@@ -42,10 +43,12 @@ public class SampleBApp
         _logger = logger;
         _serviceProvider = serviceProvider;
         
+        StreamSystemConfig config = new StreamSystemConfig();
+
 
         // Build a producer
         _producerB = _serviceProvider.GetService<ISampleB_Producer>();
-        _producerB.Initialize(_streamName,"producerB");
+        _producerB.Initialize(_streamName,"producerB",config);
         _producerB.SetProducerMethod(ProduceMessages);
         
         //new SampleB_Producer(_streamName, "Sample.B.Producer", ProduceMessages);
@@ -55,12 +58,12 @@ public class SampleBApp
         _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;
 
         _consumerB_slow = _serviceProvider.GetService<ISampleB_Consumer>();
-        _consumerB_slow.Initialize(_streamName, _consumerB_slow_name);
+        _consumerB_slow.Initialize(_streamName, _consumerB_slow_name,config);
         _consumerB_slow.SetConsumptionHandler(ConsumeSlow);
         _consumerB_slow.EventCheckPointSaved += OnEventCheckPointSavedSlow;
 
         _consumerB_Fast = _serviceProvider.GetService<ISampleB_Consumer>();
-        _consumerB_Fast.Initialize(_streamName, _consumerB_fast_name);
+        _consumerB_Fast.Initialize(_streamName, _consumerB_fast_name,config);
         _consumerB_Fast.SetConsumptionHandler(ConsumeFast);
         _consumerB_Fast.EventCheckPointSaved += OnEventCheckPointSavedFast;
 
@@ -284,5 +287,28 @@ public class SampleBApp
         else batch = "Not Specified";
 
         return batch;
+    }
+
+
+    /// <summary>
+    /// Defines the configuration for connecting to RabbitMQ Servers
+    /// </summary>
+    /// <returns></returns>
+    private StreamSystemConfig GetStreamSystemConfig()
+    {
+        IPEndPoint a = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
+        IPEndPoint b = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
+        IPEndPoint c = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqc.slug.local", 5552);
+
+        StreamSystemConfig config = new StreamSystemConfig
+        {
+            UserName = "testUser",
+            Password = "TESTUSER",
+            VirtualHost = "Test",
+            Endpoints = new List<EndPoint> {
+                a
+            },
+        };
+        return config;
     }
 }

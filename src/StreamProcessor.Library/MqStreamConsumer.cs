@@ -112,7 +112,7 @@ namespace SlugEnt.StreamProcessor
         /// <param name="applicationName">This is the name of the application that owns this Stream process.
         /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
         /// <param name="mqStreamType">The type of MQ Stream</param>
-        void Initialize(string mqStreamName, string applicationName);
+        void Initialize(string mqStreamName, string applicationName,StreamSystemConfig config);
 
         /// <summary>
         /// Establishes a connection to the stream on the RabbitMQ server(s).

@@ -16,7 +16,7 @@ public class MqTesterProducer : MqStreamProducer
 {
     // Simulating MQ
     private Queue<Message> _messagesProduced = new Queue<Message>();
-
+    private bool _streamExists = true;
 
     /// <summary>
     /// Simulates a MQ Stream instance.  Can publish, publish confirm and consume messages.
@@ -27,6 +27,37 @@ public class MqTesterProducer : MqStreamProducer
     {
         // Automatically assume we are connected.
         IsConnected = true;
+        _streamExists = true;
+    }
+
+
+    /// <summary>
+    /// Sets the IsConnected Flag.  By default IsConnected is true for this test object
+    /// </summary>
+    /// <param name="isConnected"></param>
+    public void TST_SetIsConnected(bool isConnected)
+    {
+        IsConnected = isConnected;
+    }
+
+
+    /// <summary>
+    /// Sets the value of the StreamExists.
+    /// </summary>
+    /// <param name="streamExists"></param>
+    public void TST_SetStreamExists(bool streamExists)
+    {
+        _streamExists = streamExists;}
+
+
+    /// <summary>
+    /// Override the Stream Exists function to return desired value
+    /// </summary>
+    /// <param name="streamName"></param>
+    /// <returns></returns>
+    protected override async Task<bool> RabbitMQ_StreamExists(string streamName)
+    {
+        return _streamExists;
     }
 
 

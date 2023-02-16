@@ -1,5 +1,7 @@
-﻿using AutoFixture;
+﻿using System.Net;
+using AutoFixture;
 using AutoFixture.AutoMoq;
+using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 
 namespace Test_StreamProcessorLibrary;
@@ -27,6 +29,30 @@ public static class Helpers
     }
 
 
+
+    /// <summary>
+    /// Builds the StreamSystemConfig
+    /// </summary>
+    /// <returns></returns>
+    internal static StreamSystemConfig GetStreamConfig()
+    {
+        IPAddress address = IPAddress.Loopback;
+        IPEndPoint a = IPEndPoint.Parse("127.0.0.1:5552");
+        
+        StreamSystemConfig config = new StreamSystemConfig
+        {
+            UserName = "testUser",
+            Password = "TESTUSER",
+            VirtualHost = "Test",
+            Endpoints = new List<EndPoint> {
+                a
+            },
+        };
+        return config;
+    }
+
+
+
     internal static (int sent, int confirmed) SendAndConfirmTestMessages(MqTesterProducer producerTst, int quantity, int startingMsgNumber, ConfirmationStatus status)
     {
         int count = SendTestMessages(producerTst, quantity, startingMsgNumber);
@@ -34,12 +60,15 @@ public static class Helpers
         return (count, confirmed);
     }
 
+
     public static MqTesterProducer SetupProducer(string streamName = "produce", string appName = "a")
     {
         Fixture fixture = new Fixture();
         fixture.Customize(new AutoMoqCustomization());
+
         MqTesterProducer producerTst = fixture.Create<MqTesterProducer>();
-        producerTst.Initialize(streamName, appName);
+        StreamSystemConfig config = GetStreamConfig();
+        producerTst.Initialize(streamName, appName,config);
         return producerTst;
     }
 
@@ -47,11 +76,11 @@ public static class Helpers
     public static MqTesterConsumer SetupConsumer(string streamName = "produce", string appName = "a")
     {
         Fixture fixture = new Fixture();
-
         fixture.Customize(new AutoMoqCustomization());
-        //MqTesterConsumer consumerTst = fixture.Create<MqTesterConsumer>();
+
         MqTesterConsumer consumerTst = fixture.Build<MqTesterConsumer>().OmitAutoProperties().Create();
-        consumerTst.Initialize(streamName, appName);
+        StreamSystemConfig config = GetStreamConfig();
+        consumerTst.Initialize(streamName, appName,config);
         return consumerTst;
     }
 }

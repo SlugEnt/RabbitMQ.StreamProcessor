@@ -18,11 +18,7 @@ namespace Test_StreamProcessorLibrary;
 public class Test_MQStreamProducer
 {
     bool confirmed_A = false;
-
-
-
-
-
+    
 
     // Test the Circuit Breaker Tripped Flag
     [Test]
@@ -32,6 +28,7 @@ public class Test_MQStreamProducer
     public void CircuitBreakerTrips(int limit, int messagesToSend, bool circuitBreakerShouldTrip)
     {
         MqTesterProducer producerTst = Helpers.SetupProducer();
+        //producerTst.TST_SetIsConnected(false);
         producerTst.CircuitBreakerStopLimit = limit;
 
 

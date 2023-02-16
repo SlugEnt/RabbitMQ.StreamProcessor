@@ -9,7 +9,7 @@ namespace SlugEnt.StreamProcessor
 {
     public class Helpers
     {
-        internal static IPEndPoint GetIPEndPointFromHostName(string hostName, int port, bool throwIfMoreThanOneIP = false)
+        public static IPEndPoint GetIPEndPointFromHostName(string hostName, int port, bool throwIfMoreThanOneIP = false)
         {
             var addresses = System.Net.Dns.GetHostAddresses(hostName);
             if (addresses.Length == 0)

@@ -33,7 +33,7 @@ namespace SlugEnt.StreamProcessor
         /// <param name="applicationName">This is the name of the application that owns this Stream process.
         /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
         /// <param name="mqStreamType">The type of MQ Stream</param>
-        public void Initialize(string mqStreamName, string applicationName)
+        public void Initialize(string mqStreamName, string applicationName, StreamSystemConfig streamConfig)
         {
             if (_mqStreamName != string.Empty) throw new ArgumentException("A Stream can only be initialized once.");
 
@@ -46,19 +46,8 @@ namespace SlugEnt.StreamProcessor
                     "The ApplicationName must be specified and it must be unique for a given application");
 
 
-            IPEndPoint a = Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
-            IPEndPoint b = Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
-            IPEndPoint c = Helpers.GetIPEndPointFromHostName("rabbitmqc.slug.local", 5552);
+            _config = streamConfig;
 
-            _config = new StreamSystemConfig
-            {
-                UserName = "testUser",
-                Password = "TESTUSER",
-                VirtualHost = "Test",
-                Endpoints = new List<EndPoint> {
-                    a,b,c
-                },
-            };
         }
 
 
@@ -132,7 +121,7 @@ namespace SlugEnt.StreamProcessor
 
 
             // See if we need Stream Specs.  If it already exists on server we do not.
-            bool streamExists = await _streamSystem.StreamExists(_mqStreamName);
+            bool streamExists = await RabbitMQ_StreamExists(_mqStreamName);
             if (! streamExists)
             {
                 if (MqStreamType == EnumMQStreamType.Consumer)
@@ -152,6 +141,17 @@ namespace SlugEnt.StreamProcessor
             if (_streamSystem != null) IsConnected = true;
         }
 
+
+
+        /// <summary>
+        /// Calls RabbitMQ to see if the stream exists on the server
+        /// </summary>
+        /// <param name="streamName"></param>
+        /// <returns></returns>
+        protected virtual async Task<bool> RabbitMQ_StreamExists(string streamName)
+        {
+            return await _streamSystem.StreamExists(_mqStreamName);
+        }
 
 
         /// <summary>
