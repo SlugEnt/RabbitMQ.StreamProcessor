@@ -216,7 +216,7 @@ namespace SlugEnt.StreamProcessor
                 catch (OffsetNotFoundException ex )
                 {
                     offsetType = new OffsetTypeFirst();
-                    _logger.LogInformation($"Log Offset not found for stream {_mqStreamName}.  This is okay for 1st time consumers of a stream. ");
+                    _logger.LogInformation($"Log Offset not found for stream/AppName {_mqStreamName} / {_appName} .  This is okay for 1st time consumers of a stream. ");
                 }
             
             _rawConsumer = await RabbitMQCreateRawConsumer(new RawConsumerConfig(_mqStreamName)
