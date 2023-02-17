@@ -19,6 +19,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Set Test Project
+      run: echo "COVERAGE_FILE=/home/runner/work/RabbitMQ.StreamProcessor/RabbitMQ.StreamProcessor/src/Test_StreamProcessorLibrary/coverage.opencover.xml" >> $GITHUB_ENV
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -37,7 +40,7 @@ jobs:
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
       with: 
         reports: 'coverage.opencover.xml'
-        targetdir: ${{ vars.CODE_COVERAGE_DIR }}'
+        targetdir: ''
         reporttypes: 'Html;MarkdownSummary'
         sourcedirs: ''
         historydir: ''
@@ -57,7 +60,7 @@ jobs:
       uses: actions/upload-artifact@v3.1.2    
       with:
         name: Coverage Report
-        path: ${{ vars.CODE_COVERAGE_DIR }}
+        path: ${{ env.COVERAGE_FILE }}
         verbosity: 'Verbose'
 #   - name: Setup tmate session
 #     if: success() || failure()
