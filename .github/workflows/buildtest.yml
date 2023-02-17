@@ -20,8 +20,9 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set Test Project
-      run: echo "COVERAGE_FILE=/home/runner/work/RabbitMQ.StreamProcessor/RabbitMQ.StreamProcessor/src/Test_StreamProcessorLibrary/coverage.opencover.xml" >> $GITHUB_ENV
-
+      run: |
+        echo "COVERAGE_DIR="/home/runner/work/RabbitMQ.StreamProcessor/RabbitMQ.StreamProcessor/src/Test_StreamProcessorLibrary/" >> $GITHUB_ENV
+        echo "COVERAGE_FILE=$COVERAGEDIR/coverage.opencover.xml" >> $GITHUB_ENV
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -40,9 +41,9 @@ jobs:
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
       with: 
         reports: 'coverage.opencover.xml'
-        targetdir: ''
+        targetdir: '${{ env.COVERAGE_DIR }}'
         reporttypes: 'Html;MarkdownSummary'
-        sourcedirs: ''
+        sourcedirs: '${{ env.COVERAGE_DIR }}'
         historydir: ''
         plugins: ''
         assemblyfilters: '-nunit*;-Dapper;'
