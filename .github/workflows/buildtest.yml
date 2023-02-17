@@ -37,7 +37,7 @@ jobs:
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
       with: 
         reports: '*/**/coverage.opencover.xml'
-        targetdir: ${{ env.CODE_COVERAGE_DIR }}'
+        targetdir: ${{ vars.CODE_COVERAGE_DIR }}'
         reporttypes: 'Html;MarkdownSummary'
         sourcedirs: ''
         historydir: ''
@@ -57,7 +57,7 @@ jobs:
       uses: actions/upload-artifact@v3.1.2    
       with:
         name: Coverage Report
-        path: ${{ env.CODE_COVERAGE_DIR }}
+        path: ${{ vars.CODE_COVERAGE_DIR }}
 #   - name: Setup tmate session
 #     if: success() || failure()
 #     uses: mxschmitt/action-tmate@v3
