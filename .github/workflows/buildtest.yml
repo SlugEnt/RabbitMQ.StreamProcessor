@@ -40,7 +40,7 @@ jobs:
     - name: ReportGenerator
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
       with: 
-        reports: '${{ COVERAGE_FILE }}'
+        reports: '${{ env.COVERAGE_FILE }}'
         targetdir: '${{ env.COVERAGE_DIR }}'
         reporttypes: 'Html;MarkdownSummary'
         sourcedirs: ''
