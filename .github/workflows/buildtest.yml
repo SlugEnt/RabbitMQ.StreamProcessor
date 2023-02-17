@@ -77,6 +77,8 @@ jobs:
 
 
     - name: External repo/wiki sync action
+      env: 
+        GH_ACCESS_TOKEN: ${{ secrets.WIKI_ACCESS}}
       uses: kai-tub/external-repo-sync-action@v1
       with:  
         source-directory: '${{ env.COVERAGE_PATH }}'
