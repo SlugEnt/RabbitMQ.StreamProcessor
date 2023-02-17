@@ -45,7 +45,7 @@ jobs:
         assemblyfilters: '-nunit*;-Dapper;'
         classfilters: '+*'
         filefilters: '-Program.cs;-*.cshtml'
-        verbosity: 'Debug'
+        verbosity: 'Verbose'
 
 #        title: ${{ env.CODE_COVERAGE_REPORT_NAME }}
         tag: '${{ github.workflow}}_${{ github.run_id }}'
@@ -58,7 +58,7 @@ jobs:
       with:
         name: Coverage Report
         path: ${{ vars.CODE_COVERAGE_DIR }}
-        verbosit: 'Debug'
+        verbosity: 'Verbose'
 #   - name: Setup tmate session
 #     if: success() || failure()
 #     uses: mxschmitt/action-tmate@v3
