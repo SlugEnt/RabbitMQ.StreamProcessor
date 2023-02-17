@@ -36,7 +36,7 @@ jobs:
     - name: ReportGenerator
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
       with: 
-        reports: '*/**/coverage.opencover.xml'
+        reports: 'coverage.opencover.xml'
         targetdir: ${{ vars.CODE_COVERAGE_DIR }}'
         reporttypes: 'Html;MarkdownSummary'
         sourcedirs: ''
@@ -45,7 +45,7 @@ jobs:
         assemblyfilters: '-nunit*;-Dapper;'
         classfilters: '+*'
         filefilters: '-Program.cs;-*.cshtml'
-        verbosity: 'Warning'
+        verbosity: 'Debug'
 
 #        title: ${{ env.CODE_COVERAGE_REPORT_NAME }}
         tag: '${{ github.workflow}}_${{ github.run_id }}'
@@ -58,6 +58,7 @@ jobs:
       with:
         name: Coverage Report
         path: ${{ vars.CODE_COVERAGE_DIR }}
+        verbosit: 'Debug'
 #   - name: Setup tmate session
 #     if: success() || failure()
 #     uses: mxschmitt/action-tmate@v3
