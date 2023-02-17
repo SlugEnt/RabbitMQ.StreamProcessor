@@ -27,9 +27,8 @@ jobs:
       run: |
         echo "COVERAGE_PATH = ${{ env.COVERAGE_PATH }}"
         echo "COVERAGE_FILE=${{ env.COVERAGE_PATH }}/coverage.opencover.xml" >> $GITHUB_ENV
-        echo "COVERAGE_FILE = $COVERAGE_FILE"
-        echo "COVERAGE_FILE2=$COVERAGEDIR/coverage.opencover.xml" >> $GITHUB_ENV
-        echo "CoverageFile2 = $COVERAGE_FILE"
+        echo "COVERAGE_RPT=${{ env.COVERAGE_PATH" }}/report"  >> $GITHUB_ENV
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -50,9 +49,11 @@ jobs:
 
     - name: ReportGenerator
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
+      env:
+        
       with: 
         reports: '${{ env.COVERAGE_FILE }}'
-        targetdir: '${{ env.COVERAGE_PATH }}'
+        targetdir: '${{ env.COVERAGE_RPT }}'
         reporttypes: 'Html;MarkdownSummary'
         sourcedirs: ''
         historydir: ''
@@ -72,8 +73,7 @@ jobs:
       uses: actions/upload-artifact@v3.1.2    
       with:
         name: Coverage Report
-        path: ${{ env.COVERAGE_FILE }}
-        verbosity: 'Verbose'
+        path: ${{ env.COVERAGE_RPT }}
 
 
     - name: External repo/wiki sync action
@@ -81,7 +81,7 @@ jobs:
         GH_ACCESS_TOKEN: ${{ secrets.WIKI_ACCESS_TOKEN }}
       uses: kai-tub/external-repo-sync-action@v1
       with:  
-        source-directory: '${{ env.COVERAGE_PATH }}/'
+        source-directory: '${{ env.COVERAGE_RPT }}/'
         include-patterns: "*.md"
 
     - name: Setup tmate session
