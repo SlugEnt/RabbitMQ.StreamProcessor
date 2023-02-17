@@ -27,7 +27,8 @@ jobs:
 
     - name: Set Test Project
       run: |
-        echo "COV PATH = $COVERAGE_PATH"
+        echo "COVERAGE_PATH = ${{ env.COVERAGE_PATH }}"
+        echo "Coverage_path = ${{ env.COVERAGE_PATH }}/test"
         echo "COVERAGE_FILE = $COVERAGE_FILE"
         echo "COVERAGE_FILE2=$COVERAGEDIR/coverage.opencover.xml" >> $GITHUB_ENV
         echo "CoverageFile2 = $COVERAGE_FILE"
