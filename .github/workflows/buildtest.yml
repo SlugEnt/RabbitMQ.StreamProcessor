@@ -23,7 +23,7 @@ jobs:
       run: |
         echo "COVERAGE_DIR=/home/runner/work/RabbitMQ.StreamProcessor/RabbitMQ.StreamProcessor/src/Test_StreamProcessorLibrary" >> $GITHUB_ENV
         echo "COVERAGE_FILE=$COVERAGEDIR/coverage.opencover.xml" >> $GITHUB_ENV
-        echo "CoverageFile = ${{ COVERAGE_FILE }}"
+        echo "CoverageFile = $COVERAGE_FILE"
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
