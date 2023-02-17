@@ -74,6 +74,14 @@ jobs:
         name: Coverage Report
         path: ${{ env.COVERAGE_FILE }}
         verbosity: 'Verbose'
+
+
+    - name: External repo/wiki sync action
+      uses: kai-tub/external-repo-sync-action@v1
+      with:  
+        source-directory: '${{ env.COVERAGE_PATH }}'
+        include-patterns: "*.md"
+
 #   - name: Setup tmate session
 #     if: success() || failure()
 #     uses: mxschmitt/action-tmate@v3
