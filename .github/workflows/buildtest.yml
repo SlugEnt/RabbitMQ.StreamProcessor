@@ -16,8 +16,6 @@ env:
 
 jobs:
   build:
-    env:
-      COVERAGE_FILE: ${{ env.COVERAGE_PATH }}/coverage.opencover.xml
     runs-on: ubuntu-latest
     defaults:
       run:
