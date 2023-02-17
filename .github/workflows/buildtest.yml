@@ -40,10 +40,10 @@ jobs:
     - name: ReportGenerator
       uses: danielpalme/ReportGenerator-GitHub-Action@5.1.17
       with: 
-        reports: 'coverage.opencover.xml'
+        reports: '${{ COVERAGE_FILE }}'
         targetdir: '${{ env.COVERAGE_DIR }}'
         reporttypes: 'Html;MarkdownSummary'
-        sourcedirs: '${{ env.COVERAGE_DIR }}'
+        sourcedirs: ''
         historydir: ''
         plugins: ''
         assemblyfilters: '-nunit*;-Dapper;'
