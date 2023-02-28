@@ -534,7 +534,7 @@ namespace SlugEnt.StreamProcessor
             GenerateStreamSpec();
         }
 
-
+        // TODO - No idea why SetStreamLimits needs to be async.  Remove async
 
         /// <summary>
         /// Sets the Stream Limits in more typical units of measure

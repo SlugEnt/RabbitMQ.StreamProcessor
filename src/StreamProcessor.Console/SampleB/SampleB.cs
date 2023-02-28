@@ -42,9 +42,11 @@ public class SampleBApp
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
-        
-        StreamSystemConfig config = new StreamSystemConfig();
 
+
+        // TODO - Move this to Appsettings
+        StreamSystemConfig config = GetStreamSystemConfig();
+        
 
         // Build a producer
         _producerB = _serviceProvider.GetService<ISampleB_Producer>();
