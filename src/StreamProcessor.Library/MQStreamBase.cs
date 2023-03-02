@@ -8,7 +8,7 @@ namespace SlugEnt.StreamProcessor
     /// <summary>
     /// The base for the MQStreamProducer and MQStreamConsumer classes
     /// </summary>
-    public abstract class MQStreamBase
+    public abstract class MQStreamBase 
     {
         protected string _mqStreamName = "";
         protected StreamSystemConfig _config;
@@ -73,6 +73,14 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
+        /// Builds the Fullname for this MQStream.
+        /// <para>Fullname is stream name combined with application name</para>">
+        /// </summary>
+        public string FullName { get { return MQStreamName + "." + ApplicationName; } }
+
+
+
+        /// <summary>
         /// Number of messages published or consumed depending on type of stream
         /// </summary>
         public ulong MessageCounter { get; protected set; } = 0;
@@ -110,7 +118,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         /// <returns></returns>
         /// <exception cref="ApplicationException"></exception>
-        public async Task ConnectAsync()
+        public virtual async Task ConnectAsync()
         {
             if (IsConnected) return;
 
@@ -129,7 +137,7 @@ namespace SlugEnt.StreamProcessor
                     throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
                 else if (_streamSpec == null)
                     throw new StreamSystemInitialisationException(
-                        "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");
+                        "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimitsAsync first.");
 
                 // Connect to the Stream
                 _streamSystem.CreateStream(_streamSpec);
@@ -167,6 +175,9 @@ namespace SlugEnt.StreamProcessor
         {
          
         }
+
+
+
 
 
         // These are Message.ApplicationProperties Keys that are used

@@ -102,7 +102,7 @@ public class Test_MQStreamProducer
     }
 
 
-    // Test that a successful SendMessage returns true
+    // Test that a successful SendMessageAsync returns true
     [Test]
     public async Task SendMessageTrueIfCircuitBreakerNotSet()
     {
@@ -112,13 +112,13 @@ public class Test_MQStreamProducer
 
         // B - Send 1 messages - Failure
         int qtyToSend = 1;
-        bool rc = await producerTst.SendMessage("Success MSG");
-        Assert.IsTrue(rc,"A10:  Successful SendMessage should return true");
+        bool rc = await producerTst.SendMessageAsync("Success MSG");
+        Assert.IsTrue(rc,"A10:  Successful SendMessageAsync should return true");
     }
 
 
 
-    // Test that a SendMessage returns false if the Circuit Breaker is set.
+    // Test that a SendMessageAsync returns false if the Circuit Breaker is set.
     [Test]
     public async Task SendMessageFailsIfCircuitBreakerSet()
     {
@@ -138,8 +138,8 @@ public class Test_MQStreamProducer
         Assert.IsTrue(producerTst.CircuitBreakerTripped, "A20:  Circuit Breaker was not tripped. Should have.");
 
         // D - Try to send another it should return false.
-        bool rc = await producerTst.SendMessage("Failed Message");
-        Assert.IsFalse(rc,"A30: SendMessage should have returned false");
+        bool rc = await producerTst.SendMessageAsync("Failed Message");
+        Assert.IsFalse(rc,"A30: SendMessageAsync should have returned false");
     }
 
 

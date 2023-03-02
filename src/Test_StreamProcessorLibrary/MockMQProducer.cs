@@ -1,35 +1,25 @@
-﻿using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
-using System.Collections.Concurrent;
+﻿using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
-using Microsoft.Extensions.Logging;
+using RabbitMQ.Stream.Client.Reliable;
+using SlugEnt.StreamProcessor;
 
 namespace Test_StreamProcessorLibrary;
 
-
-/// <summary>
-/// This class is derived from the MqStreamProducer.  It is used to enable the unit testing of some of the RabbitMQ functionality.
-/// For instance, SendingMessages actually just sends to a queue.
-/// Also some classes are unable to be instantiated outside the RabbitMQ Streams client.  This bypasses that requirement.
-/// </summary>
-public class MqTesterProducer : MqStreamProducer
+public class MockMQProducer : MqStreamProducer, IMqStreamProducer
 {
-    // Simulating MQ
-    private Queue<Message> _messagesProduced = new Queue<Message>();
     private bool _streamExists = true;
+    private Queue<Message> _messagesProduced = new Queue<Message>();
 
-    /// <summary>
-    /// Simulates a MQ Stream instance.  Can publish, publish confirm and consume messages.
-    /// </summary>
-    /// <param name="streamName"></param>
-    /// <param name="appName"></param>
-    public MqTesterProducer(ILogger<MqTesterProducer> logger) : base(logger)
+
+    public MockMQProducer(ILogger<MqStreamProducer> logger) : base(logger)
     {
-        // Automatically assume we are connected.
-        IsConnected = true;
-        _streamExists = true;
+
     }
 
+    public override async Task ConnectAsync()
+    {
+        IsConnected = true;
+    }
 
     /// <summary>
     /// Sets the IsConnected Flag.  By default IsConnected is true for this test object
@@ -49,6 +39,7 @@ public class MqTesterProducer : MqStreamProducer
     {
         _streamExists = streamExists;
     }
+
 
 
     /// <summary>

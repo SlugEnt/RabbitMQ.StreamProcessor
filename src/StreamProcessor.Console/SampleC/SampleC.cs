@@ -1,39 +1,30 @@
-﻿using RabbitMQ.Stream.Client;
-using System.ComponentModel;
-using System.Drawing;
-using Microsoft.Extensions.Logging;
-using RabbitMQ.Stream.Client.AMQP;
+﻿using Microsoft.Extensions.Logging;
+using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 using SlugEnt.StreamProcessor;
-using StreamProcessor.Console;
 using StreamProcessor.Console.SampleB;
-using Microsoft.Extensions.DependencyInjection;
+using StreamProcessor.Console;
+using StreamProcessor.ConsoleScr.SampleB;
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace StreamProcessor.ConsoleScr.SampleB;
+namespace StreamProcessor.ConsoleScr.SampleC;
 
-/// <summary>
-/// This Sample represents 1 producer and 2 consumers.
-/// It is using the MQStreamConsumer and MQStreamProducer's but with their own wrapper classes.
-/// </summary>
-public class SampleBApp
+public class SampleCApp
 {
     // Just the key that is added to all messages 
     private const string AP_BATCH = "Batch";
 
-    private string _streamName = "Sample.B";
-    private ISampleB_Producer _producerB;
+    private string _streamName = "Sample.C";
 
-    // Consumer - Slow
-    private ISampleB_Consumer _consumerB_slow;
-    private string _consumerB_slow_name = "ConBSlow";
+    private IMQStreamEngine _mqStreamEngine;
+    private IMqStreamProducer _producer;
+    private IMqStreamConsumer _consumerSlow;
+    private IMqStreamConsumer _consumerFast;
 
-    private ISampleB_Consumer _consumerB_Fast;
-    private string _consumerB_fast_name = "ConBFast";
-    
-    
+
     private string _batch;
-    
+
     private short statsListSize = 10;
     private List<Stats> _statsList;
 
@@ -41,7 +32,8 @@ public class SampleBApp
     private IServiceProvider _serviceProvider;
 
 
-    public SampleBApp(ILogger<SampleBApp> logger, IServiceProvider serviceProvider)
+
+    public SampleCApp(ILogger<SampleBApp> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -49,40 +41,56 @@ public class SampleBApp
 
         // TODO - Move this to Appsettings
         StreamSystemConfig config = GetStreamSystemConfig();
-        
 
-        // Build a producer
-        _producerB = _serviceProvider.GetService<ISampleB_Producer>();
-        _producerB.Initialize(_streamName,"producerB",config);
-        _producerB.SetProducerMethod(ProduceMessages);
-        
-        //new SampleB_Producer(_streamName, "Sample.B.Producer", ProduceMessages);
-        _producerB.SetStreamLimitsRawAsync(1000, 100, 900);
-        
-        _producerB.MessageConfirmationError += MessageConfirmationError;
-        _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;
+        _mqStreamEngine = serviceProvider.GetService<IMQStreamEngine>();
 
-        _consumerB_slow = _serviceProvider.GetService<ISampleB_Consumer>();
-        _consumerB_slow.Initialize(_streamName, _consumerB_slow_name,config);
-        _consumerB_slow.SetConsumptionHandler(ConsumeSlow);
-        _consumerB_slow.EventCheckPointSaved += OnEventCheckPointSavedSlow;
-
-        _consumerB_Fast = _serviceProvider.GetService<ISampleB_Consumer>();
-        _consumerB_Fast.Initialize(_streamName, _consumerB_fast_name,config);
-        _consumerB_Fast.SetConsumptionHandler(ConsumeFast);
-        _consumerB_Fast.EventCheckPointSaved += OnEventCheckPointSavedFast;
-
-
-        BuildStatsObjects();
-        
-
-        DisplayStats = new DisplayStats(_statsList);
-        
-        //DisplayStats.Refresh();
+        // Get Producer / Consumers
+        _consumerSlow = _mqStreamEngine.GetConsumer(_streamName,"ConCSlow",ConsumeSlow);
+        _consumerFast = _mqStreamEngine.GetConsumer(_streamName, "ConCFast", ConsumeFast);
     }
 
 
-    
+    public async Task Start()
+    {
+        try
+        {
+
+            await _mqStreamEngine.StartProducerAsync(_producer);
+
+            await _mqStreamEngine.StartConsumerAsync(_consumerSlow);
+            await _mqStreamEngine.StartConsumerAsync(_consumerFast);
+
+
+            bool keepProcessingB = true;
+            while (keepProcessingB)
+            {
+                if (System.Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo d1KeyInfo = System.Console.ReadKey();
+                    if (d1KeyInfo.Key == ConsoleKey.X)
+                    {
+                        keepProcessingB = false;
+                        //await _producer.Stop();
+                    }
+                }
+
+                System.Console.WriteLine($"Queued Messages: {_producer.Stat_RetryQueuedMessageCount}");
+                System.Console.WriteLine($"Message Counter: {_producer.MessageCounter}");
+                System.Console.WriteLine($"Circuit Breaker Status: {_producer.CircuitBreakerTripped}");
+
+                UpdateStats();
+                DisplayStats.Refresh();
+                Thread.Sleep(1000);
+
+            }
+        }
+        catch (Exception ex) { System.Console.WriteLine("Exception {0}", ex.Message); }
+
+        System.Console.WriteLine($"Stream B has completed all processing.");
+    }
+
+
+
     private void BuildStatsObjects()
     {
         _statsList = new List<Stats>();
@@ -107,55 +115,16 @@ public class SampleBApp
     /// The number of messages that should be produced per batch
     /// </summary>
     public short MessagesPerBatch { get; set; } = 6;
-
-
     public int IntervalInSecondsBetweenBatches { get; set; } = 3;
 
-
-    public async Task Start()
-    {
-        try
-        {
-            await _producerB.Start();
-            await _consumerB_slow.Start();
-            await _consumerB_Fast.Start();
-
-
-            bool keepProcessingB = true;
-            while (keepProcessingB)
-            {
-                if (System.Console.KeyAvailable)
-                {
-                    ConsoleKeyInfo d1KeyInfo = System.Console.ReadKey();
-                    if (d1KeyInfo.Key == ConsoleKey.X)
-                    {
-                        keepProcessingB = false;
-                        await _producerB.Stop();
-                    }
-                }
-
-                System.Console.WriteLine($"Queued Messages: {_producerB.Stat_RetryQueuedMessageCount}");
-                System.Console.WriteLine($"Message Counter: {_producerB.MessageCounter}");
-                System.Console.WriteLine($"Circuit Breaker Status: {_producerB.CircuitBreakerTripped}");
-
-                UpdateStats();
-                DisplayStats.Refresh();
-                Thread.Sleep(1000);
-
-            }
-        }
-        catch (Exception ex) { System.Console.WriteLine("Exception {0}", ex.Message); }
-
-        System.Console.WriteLine($"Stream B has completed all processing.");
-    }
 
 
     private void UpdateStats()
     {
-        _statsList[0].SuccessMessages = _producerB.Stat_MessagesSuccessfullyConfirmed;
-        _statsList[0].FailureMessages = _producerB.Stat_MessagesErrored;
-        _statsList[0].CircuitBreakerTripped = _producerB.CircuitBreakerTripped;
-        
+        _statsList[0].SuccessMessages = _producer.Stat_MessagesSuccessfullyConfirmed;
+        _statsList[0].FailureMessages = _producer.Stat_MessagesErrored;
+        _statsList[0].CircuitBreakerTripped = _producer.CircuitBreakerTripped;
+
     }
 
 
@@ -230,7 +199,7 @@ public class SampleBApp
         bool success = e.Status == ConfirmationStatus.Confirmed ? true : false;
         ConfirmationMessage cm = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
         _statsList[0].ProducedMessages.Add(cm);
-        if (_statsList[0].ProducedMessages.Count > statsListSize) { _statsList[0].ProducedMessages.RemoveAt(0);}
+        if (_statsList[0].ProducedMessages.Count > statsListSize) { _statsList[0].ProducedMessages.RemoveAt(0); }
 
         _statsList[0].SuccessMessages++;
         //HelperFunctions.WriteInColor($"Success:  MSg Batch:  {batch}", ConsoleColor.Green);
@@ -258,8 +227,8 @@ public class SampleBApp
     {
         _statsList[1].ConsumedMessages++;
         _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
-//        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.CheckpointLastOffset;
-        _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerB_slow.CheckpointOffsetCounter;
+        //        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.CheckpointLastOffset;
+        _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerSlow.CheckpointOffsetCounter;
         // Simulate slow
         Thread.Sleep(1500);
         return true;
@@ -275,7 +244,7 @@ public class SampleBApp
     {
         _statsList[2].ConsumedMessages++;
         _statsList[2].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
-        _statsList[2].ConsumeCurrentAwaitingCheckpoint = _consumerB_Fast.CheckpointOffsetCounter;
+        _statsList[2].ConsumeCurrentAwaitingCheckpoint = _consumerFast.CheckpointOffsetCounter;
         return true;
     }
 

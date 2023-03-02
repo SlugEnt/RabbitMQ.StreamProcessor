@@ -55,7 +55,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name="offset"></param>
     /// <returns></returns>
-    protected override async Task RabbitMQ_StoreOffset(ulong offset)
+    protected override async Task RabbitMQ_StoreOffsetAsync(ulong offset)
     {
         _rabbitMQ_StoredOffset = offset;
     }
@@ -65,7 +65,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// Override the Query Offset Method
     /// </summary>
     /// <returns></returns>
-    protected override async Task<IOffsetType> RabbitMQQueryOffset()
+    protected override async Task<IOffsetType> RabbitMQQueryOffsetAsync()
     {
         IOffsetType offsetType = new OffsetTypeOffset(_msgOffsetID);
         return offsetType;
@@ -87,7 +87,7 @@ public class MqTesterConsumer : MqStreamConsumer
         foreach (Message message in _messagesToConsume)
         {
             MessageContext msgContext = new(++_msgOffsetID,TimeSpan.FromMilliseconds(-1));
-            await ProcessMessage(msgContext, message);
+            await ProcessMessageAsync(msgContext, message);
         }
     }
 

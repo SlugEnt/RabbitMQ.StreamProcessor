@@ -8,127 +8,6 @@ using Microsoft.Extensions.Logging;
 
 namespace SlugEnt.StreamProcessor
 {
-    public interface IMqStreamConsumer
-    {
-        /// <summary>
-        /// The offset of the last message successfully received
-        /// </summary>
-        ulong LastOffset { get; }
-
-        /// <summary>
-        /// The offset of the last time a checkpoint was performed.  Zero indicates no checkpoint has been done yet.
-        /// </summary>
-        ulong CheckpointLastOffset { get; }
-
-        /// <summary>
-        /// The total number of messages consumed.
-        /// </summary>
-        ulong MessagesConsumed { get; }
-
-        /// <summary>
-        /// How many messages have been consumed since last Checkpoint
-        /// </summary>
-        int CheckpointOffsetCounter { get; }
-
-        /// <summary>
-        /// How many messages need to be consumed before Saving the offset.  IF you wish more advanced, you will have to create your own check method.
-        /// </summary>
-        int CheckpointOffsetLimit { get; set; }
-
-        /// <summary>
-        /// The date time of the last Checkpoint operation.  Callers can use this if they wish to use elapsed time based checkpoint operations
-        /// </summary>
-        DateTime CheckpointLastDateTime { get; set; }
-
-        /// <summary>
-        /// The application that owns this Stream Process.
-        /// It is used when checkpointing the Stream and is tagged in the message properties when creating the message
-        /// </summary>
-        string ApplicationName { get; }
-
-        /// <summary>
-        /// The name of the stream we publish and consume messages from
-        /// </summary>
-        string MQStreamName { get; }
-
-        /// <summary>
-        /// Number of messages published or consumed depending on type of stream
-        /// </summary>
-        ulong MessageCounter { get; }
-
-        /// <summary>
-        /// Whether this stream is a publisher or consumer
-        /// </summary>
-        EnumMQStreamType MqStreamType { get; }
-
-        /// <summary>
-        /// Whether the stream is connected
-        /// </summary>
-        bool IsConnected { get; }
-
-        /// <summary>
-        /// Maximum length this stream can be.  Only applicable on newly published streams
-        /// </summary>
-        ulong MaxLength { get; set; }
-
-        /// <summary>
-        /// Maximum segment size for this stream
-        /// </summary>
-        int MaxSegmentSize { get; set; }
-
-        /// <summary>
-        /// Max Age of records in seconds
-        /// </summary>
-        ulong MaxAge { get; set; }
-
-        /// <summary>
-        /// Initiate the Consumption cycle
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="ApplicationException"></exception>
-        Task ConsumeAsync();
-
-        /// <summary>
-        /// Sets the Method to be called when a message is received.
-        /// </summary>
-        /// <param name="callHandler"></param>
-        void SetConsumptionHandler(Func<Message, Task<bool>> callHandler);
-
-        /// <summary>
-        /// Performs a Offset store operation on the MQ Stream. Sets the offset to the offset of the last received message
-        /// </summary>
-        /// <returns></returns>
-        Task CheckPointSet();
-
-        /// <summary>
-        /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
-        /// </summary>
-        event EventHandler<MqStreamCheckPointEventArgs> EventCheckPointSaved;
-
-        /// <summary>
-        /// Initializes the Stream
-        /// </summary>
-        /// <param name="mqStreamName"></param>
-        /// <param name="applicationName">This is the name of the application that owns this Stream process.
-        /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
-        /// <param name="mqStreamType">The type of MQ Stream</param>
-        void Initialize(string mqStreamName, string applicationName,StreamSystemConfig config);
-
-        /// <summary>
-        /// Establishes a connection to the stream on the RabbitMQ server(s).
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="ApplicationException"></exception>
-        Task ConnectAsync();
-
-        /// <summary>
-        /// Permanently deletes the Stream off the RabbitMQ Servers.
-        /// </summary>
-        /// <returns></returns>
-        Task DeleteStream();
-
-        Task StreamInfo();
-    }
 
     /// <summary>
     /// Provides RabbitMQ Streams Consumption capabilities
@@ -211,7 +90,7 @@ namespace SlugEnt.StreamProcessor
             IOffsetType offsetType;
             try
                 {
-                    offsetType = await RabbitMQQueryOffset();
+                    offsetType = await RabbitMQQueryOffsetAsync();
                 }
                 catch (OffsetNotFoundException ex )
                 {
@@ -219,11 +98,11 @@ namespace SlugEnt.StreamProcessor
                     _logger.LogInformation($"Log Offset not found for stream/AppName {_mqStreamName} / {_appName} .  This is okay for 1st time consumers of a stream. ");
                 }
             
-            _rawConsumer = await RabbitMQCreateRawConsumer(new RawConsumerConfig(_mqStreamName)
+            _rawConsumer = await RabbitMQCreateRawConsumerAsync(new RawConsumerConfig(_mqStreamName)
             {
                 Reference = ApplicationName,
                 OffsetSpec = offsetType,
-                MessageHandler = MessageHandler
+                MessageHandler = MessageHandlerAsync
             });
         }
 
@@ -233,7 +112,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         /// <remarks>Virtual so it can be overridden and moq'd</remarks>
         /// <returns></returns>
-        protected virtual async Task<IOffsetType> RabbitMQQueryOffset()
+        protected virtual async Task<IOffsetType> RabbitMQQueryOffsetAsync()
         {
             ulong priorOffset = await _streamSystem.QueryOffset(ApplicationName, _mqStreamName);
             return new OffsetTypeOffset(priorOffset);
@@ -247,7 +126,7 @@ namespace SlugEnt.StreamProcessor
         /// <param name="config"></param>
         /// <remarks>Virtual so it can be overridden and moq'd</remarks>
         /// <returns></returns>
-        protected virtual async Task<IConsumer> RabbitMQCreateRawConsumer(RawConsumerConfig config)
+        protected virtual async Task<IConsumer> RabbitMQCreateRawConsumerAsync(RawConsumerConfig config)
         {
             return await _streamSystem.CreateRawConsumer(config);
         }
@@ -269,7 +148,7 @@ namespace SlugEnt.StreamProcessor
         /// <param name="offset"></param>
         /// <remarks>Virtual so it can be overridden in test scenarios</remarks>
         /// <returns></returns>
-        protected virtual async Task RabbitMQ_StoreOffset(ulong offset)
+        protected virtual async Task RabbitMQ_StoreOffsetAsync(ulong offset)
         {
             await _rawConsumer.StoreOffset(offset);
         }
@@ -279,7 +158,7 @@ namespace SlugEnt.StreamProcessor
         /// Performs a Offset store operation on the MQ Stream. Sets the offset to the offset of the last received message
         /// </summary>
         /// <returns></returns>
-        public async Task CheckPointSet()
+        public async Task CheckPointSetAsync()
         {
             // If no messages have been consumed, then store date time and return
             if (LastOffset == 0)
@@ -293,7 +172,7 @@ namespace SlugEnt.StreamProcessor
             // have to wait until next time in this method to store that value.
             // Save last offset so we don't need to deal with thread locking.
             ulong last = LastOffset;
-            await RabbitMQ_StoreOffset(last);
+            await RabbitMQ_StoreOffsetAsync(last);
             CheckpointLastOffset = last;
             CheckpointOffsetCounter = 0;
             CheckpointLastDateTime = DateTime.Now;
@@ -318,13 +197,20 @@ namespace SlugEnt.StreamProcessor
         /// <param name="msgContext"></param>
         /// <param name="message">The message from the MQ Broker</param>
         /// <returns></returns>
-        protected async Task MessageHandler(RawConsumer consumer, MessageContext msgContext, Message message)
+        protected async Task MessageHandlerAsync(RawConsumer consumer, MessageContext msgContext, Message message)
         {
-            await ProcessMessage(msgContext,message);
+            await ProcessMessageAsync(msgContext,message);
         }
 
 
-        protected virtual async Task ProcessMessage(MessageContext msgContext, Message message)
+
+        /// <summary>
+        /// Processes the received message and performs any auto checkpoints that may be needed.
+        /// </summary>
+        /// <param name="msgContext"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        protected virtual async Task ProcessMessageAsync(MessageContext msgContext, Message message)
         {
             bool success = await _callHandler(message);
             if (success)
@@ -336,7 +222,7 @@ namespace SlugEnt.StreamProcessor
 
                 if (CheckpointOffsetCounter >= CheckpointOffsetLimit)
                 {
-                    CheckPointSet();
+                    CheckPointSetAsync();
                 }
 
             }
@@ -345,13 +231,25 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
-        /// Decodes the actual message bode from the Message object
+        /// Decodes the actual message body from the Message object
         /// </summary>
         /// <param name="msg"></param>
         /// <returns></returns>
         public string DecodeMessage(Message msg)
         {
             return Encoding.Default.GetString(msg.Data.Contents.ToArray());
+        }
+
+
+
+        /// <summary>
+        /// Stops the consumption of messages.
+        /// </summary>
+        /// <returns></returns>
+        public async Task StopAsync()
+        {
+            await _streamSystem.Close();
+            IsConnected = false;
         }
 
 
