@@ -58,11 +58,35 @@ public interface IMQStreamEngine
     /// <returns></returns>
     Task StartProducerAsync(IMqStreamProducer producer);
 
+    /// <summary>
+    /// Stops All consumers and then stops all producers.
+    /// </summary>
+    /// <returns></returns>
     Task StopAllAsync();
 
+    /// <summary>
+    /// Stops all the consumers.  Waits for all to be stopped before returning.
+    /// </summary>
+    /// <returns></returns>
     Task StopAllConsumersAsync();
 
+    /// <summary>
+    /// Stops all the producers.  Waits for all to be stopped before returning.
+    /// </summary>
+    /// <returns></returns>
+    Task StopAllProducers();
+
+    /// <summary>
+    /// Starts all the Producers
+    /// </summary>
+    /// <returns></returns>
     Task StartAllProducersAsync();
+
+    /// <summary>
+    /// Starts all the consumers first and then the producers.
+    /// </summary>
+    /// <returns></returns>
+    Task StartAllStreamsAsync();
 }
 
 

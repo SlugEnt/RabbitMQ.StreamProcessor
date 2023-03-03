@@ -137,7 +137,7 @@ namespace SlugEnt.StreamProcessor
                 startTasks.Add(StartConsumerAsync(kvConsumer.Value));
             }
 
-            Task.WhenAll(startTasks);
+            await Task.WhenAll(startTasks);
         }
 
 
@@ -196,6 +196,18 @@ namespace SlugEnt.StreamProcessor
                 _logger.LogError(ex, ex.Message);
                 throw;
             }
+        }
+
+
+
+        /// <summary>
+        /// Starts all the producers first and then the consumers.
+        /// </summary>
+        /// <returns></returns>
+        public async Task StartAllStreamsAsync()
+        {
+            await StartAllProducersAsync();
+            await StartAllConsumersAsync();
         }
 
 

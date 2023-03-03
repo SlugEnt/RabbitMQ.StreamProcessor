@@ -122,31 +122,35 @@ namespace SlugEnt.StreamProcessor
         {
             if (IsConnected) return;
 
-            // Connect to the broker and create the system object
-            // the entry point for the client.
-            // Create it once and reuse it.
-            _streamSystem = await StreamSystem.Create(_config);
-
-
-            // See if we need Stream Specs.  If it already exists on server we do not.
-            bool streamExists = await RabbitMQ_StreamExists(_mqStreamName);
-            if (! streamExists)
+            try
             {
-                if (MqStreamType == EnumMQStreamType.Consumer)
-                    // TODO =- Change To Some type of Stream Exception
-                    throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
-                else if (_streamSpec == null)
-                    throw new StreamSystemInitialisationException(
-                        "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimitsAsync first.");
+                // Connect to the broker and create the system object
+                // the entry point for the client.
+                // Create it once and reuse it.
+                _streamSystem = await StreamSystem.Create(_config);
 
-                // Connect to the Stream
-                _streamSystem.CreateStream(_streamSpec);
+
+                // See if we need Stream Specs.  If it already exists on server we do not.
+                bool streamExists = await RabbitMQ_StreamExists(_mqStreamName);
+                if (!streamExists)
+                {
+                    if (MqStreamType == EnumMQStreamType.Consumer)
+                        // TODO =- Change To Some type of Stream Exception
+                        throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
+                    else if (_streamSpec == null)
+                        throw new StreamSystemInitialisationException(
+                            "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimitsAsync first.");
+
+                    // Connect to the Stream
+                    _streamSystem.CreateStream(_streamSpec);
+                }
+                else
+                    // Connect to the Stream - But use the existing definition
+                    _streamSystem.CreateStream(null);
+
+                if (_streamSystem != null) IsConnected = true;
             }
-            else
-                // Connect to the Stream - But use the existing definition
-                _streamSystem.CreateStream(null);
-
-            if (_streamSystem != null) IsConnected = true;
+            catch (Exception ex) { _logger.LogError($"Error connecting to RabbitMQ Stream - {ex.Message}");}
         }
 
 
@@ -170,6 +174,8 @@ namespace SlugEnt.StreamProcessor
         {
             await _streamSystem.DeleteStream(_mqStreamName);
         }
+
+
 
         public async Task StreamInfo()
         {

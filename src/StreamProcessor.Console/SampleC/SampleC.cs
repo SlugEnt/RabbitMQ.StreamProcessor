@@ -22,6 +22,7 @@ public class SampleCApp
     private IMqStreamConsumer _consumerSlow;
     private IMqStreamConsumer _consumerFast;
 
+    private bool _stopping = false;
 
     private string _batch;
 
@@ -42,24 +43,29 @@ public class SampleCApp
         // TODO - Move this to Appsettings
         StreamSystemConfig config = GetStreamSystemConfig();
 
-        _mqStreamEngine = serviceProvider.GetService<IMQStreamEngine>();
+        _mqStreamEngine =_serviceProvider.GetService<IMQStreamEngine>();
+        _mqStreamEngine.StreamSystemConfig = config;
 
         // Get Producer / Consumers
         _consumerSlow = _mqStreamEngine.GetConsumer(_streamName,"ConCSlow",ConsumeSlow);
         _consumerFast = _mqStreamEngine.GetConsumer(_streamName, "ConCFast", ConsumeFast);
+
+        _producer = _mqStreamEngine.GetProducer(_streamName, "Produce1");
     }
 
 
+    /// <summary>
+    /// Startup the producers and consumers.
+    /// </summary>
+    /// <returns></returns>
     public async Task Start()
     {
         try
         {
+            await _mqStreamEngine.StartAllStreamsAsync();
 
-            await _mqStreamEngine.StartProducerAsync(_producer);
-
-            await _mqStreamEngine.StartConsumerAsync(_consumerSlow);
-            await _mqStreamEngine.StartConsumerAsync(_consumerFast);
-
+            // Note - we do not await this!  
+            Task produceMessages =  ProduceMessages();
 
             bool keepProcessingB = true;
             while (keepProcessingB)
@@ -70,7 +76,9 @@ public class SampleCApp
                     if (d1KeyInfo.Key == ConsoleKey.X)
                     {
                         keepProcessingB = false;
-                        //await _producer.Stop();
+                        _stopping = true;
+                        await produceMessages;
+                        return;
                     }
                 }
 
@@ -86,7 +94,9 @@ public class SampleCApp
         }
         catch (Exception ex) { System.Console.WriteLine("Exception {0}", ex.Message); }
 
-        System.Console.WriteLine($"Stream B has completed all processing.");
+        await _mqStreamEngine.StopAllAsync();
+
+        System.Console.WriteLine($"Sample C has completed all processing.");
     }
 
 
@@ -133,11 +143,11 @@ public class SampleCApp
     /// </summary>
     /// <param name="producer"></param>
     /// <returns></returns>
-    protected async Task ProduceMessages(SampleB_Producer producer)
+    protected async Task ProduceMessages()
     {
         // Initiate the Batch Number
         _batch = "A";
-        while (!producer.IsCancelled)
+        while (!_stopping)
         {
             try
             {
@@ -146,7 +156,7 @@ public class SampleCApp
                 {
                     string fullBatchId = _batch + i;
                     string msg = String.Format($"Id: {i} ");
-                    Message message = producer.CreateMessage(msg);
+                    Message message = _producer.CreateMessage(msg);
 
                     string fullBatch = _batch.ToString() + i.ToString();
                     message.ApplicationProperties.Add(AP_BATCH, fullBatch);
@@ -154,20 +164,20 @@ public class SampleCApp
 
                     _statsList[0].CreatedMessages++;
 
-                    if (!producer.CircuitBreakerTripped)
-                        await producer.SendMessageAsync(message);
+                    if (!_producer.CircuitBreakerTripped)
+                        await _producer.SendMessageAsync(message);
                     else
                     {
                         bool keepTrying = true;
                         while (keepTrying)
                         {
-                            if (producer.IsCancelled) return;
-                            if (producer.CircuitBreakerTripped) Thread.Sleep(2000);
-                            else await producer.SendMessageAsync(message);
+                            if (_stopping) return;
+                            if (_producer.CircuitBreakerTripped) Thread.Sleep(2000);
+                            else await _producer.SendMessageAsync(message);
                         }
                     }
 
-                    if (producer.IsCancelled) return;
+                    if (_stopping) break;
                 }
 
                 _batch = HelperFunctions.NextBatch(_batch);
@@ -176,6 +186,8 @@ public class SampleCApp
             }
             catch (Exception ex) { }
         }
+
+        await _producer.StopAsync();
     }
 
 

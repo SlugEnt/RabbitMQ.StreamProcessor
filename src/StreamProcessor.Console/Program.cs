@@ -22,7 +22,7 @@ using StreamProcessor.Console.SampleA;
 using StreamProcessor.Console.SampleB;
 using StreamProcessor.ConsoleScr;
 using StreamProcessor.ConsoleScr.SampleB;
-
+using StreamProcessor.ConsoleScr.SampleC;
 
 
 public class Program
@@ -67,8 +67,11 @@ public class Program
                 services.AddTransient<MainMenu>();
                 services.AddTransient<IMqStreamConsumer, MqStreamConsumer>();
                 services.AddTransient<IMqStreamProducer, MqStreamProducer>();
+                services.AddTransient<IMQStreamEngine,MQStreamEngine>();
                 services.AddTransient<ISampleB_Consumer,SampleB_Consumer>();
                 services.AddTransient<ISampleB_Producer, SampleB_Producer>();
+                services.AddTransient<SampleCApp>();
+
             })
             .ConfigureLogging((_, logging) =>
             {
