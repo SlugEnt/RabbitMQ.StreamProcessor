@@ -174,7 +174,7 @@ namespace SlugEnt.StreamProcessor
                 startTasks.Add(StartProducerAsync(kvProducer.Value));
             }
 
-            Task.WhenAll(startTasks);
+            await Task.WhenAll(startTasks);
         }
 
 

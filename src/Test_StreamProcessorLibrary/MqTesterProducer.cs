@@ -23,7 +23,7 @@ public class MqTesterProducer : MqStreamProducer
     /// </summary>
     /// <param name="streamName"></param>
     /// <param name="appName"></param>
-    public MqTesterProducer(ILogger<MqTesterProducer> logger) : base(logger)
+    public MqTesterProducer(ILogger<MqTesterProducer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
     {
         // Automatically assume we are connected.
         IsConnected = true;

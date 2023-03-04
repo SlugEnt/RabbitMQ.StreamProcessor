@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Stream.Client.Reliable;
 using SlugEnt.StreamProcessor;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
 
@@ -25,7 +26,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name="streamName"></param>
     /// <param name="appName"></param>
-    public MqTesterConsumer(ILogger<MqTesterConsumer> logger) : base(logger)
+    public MqTesterConsumer(ILogger<MqTesterConsumer> logger, ServiceProvider serviceProvider) : base(logger,serviceProvider)
     {
         // Automatically assume we are connected.
         IsConnected = true;

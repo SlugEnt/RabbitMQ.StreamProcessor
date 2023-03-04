@@ -4,6 +4,7 @@ using RabbitMQ.Stream.Client.Reliable;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace SlugEnt.StreamProcessor
@@ -21,6 +22,7 @@ namespace SlugEnt.StreamProcessor
 
 
 
+
         /// <summary>
         /// Creates a Stream Consumer object
         /// </summary>
@@ -28,10 +30,16 @@ namespace SlugEnt.StreamProcessor
         /// <param name="applicationName">This is the name of the application that owns this Stream process.
         /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
         /// </param>
-        public MqStreamConsumer(ILogger<MqStreamConsumer> logger) : base(logger, EnumMQStreamType.Consumer)
+        public MqStreamConsumer(ILogger<MqStreamConsumer> logger, IServiceProvider serviceProvider) : base(logger, EnumMQStreamType.Consumer)
         {
-
+            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            ILogger<StreamSystem> streamLogger = loggerFactory.CreateLogger<StreamSystem>();
+            RawConsumerLogger = loggerFactory.CreateLogger<RawConsumer>();
+            this.StreamLogger = streamLogger;
         }
+
+
+        protected ILogger<RawConsumer> RawConsumerLogger { get; set; }
 
 
         /// <summary>
@@ -248,7 +256,8 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         public async Task StopAsync()
         {
-            await _streamSystem.Close();
+            await _streamSystem.Close().ConfigureAwait(false);
+            
             IsConnected = false;
         }
 

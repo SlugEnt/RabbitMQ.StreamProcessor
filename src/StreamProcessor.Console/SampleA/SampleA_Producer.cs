@@ -20,7 +20,7 @@ public class SampleA_Producer : MqStreamProducer
     /// <param name="mqStreamName"></param>
     /// <param name="appName"></param>
     /// <param name="produceMessagesMethod">Method that should be called to produce messages</param>
-    public SampleA_Producer(ILogger<SampleA_Producer> logger) : base(logger) //string streamName, string appName, Func<Message, Task<bool>> consumptionHandler, ILogger<SampleB_Consumer> logger) : base(streamName, appName)
+    public SampleA_Producer(ILogger<SampleA_Producer> logger, IServiceProvider serviceProvider) : base(logger,serviceProvider) 
     {
     }
 

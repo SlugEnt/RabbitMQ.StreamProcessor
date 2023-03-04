@@ -59,6 +59,9 @@ namespace StreamProcessor.ConsoleScr
                 System.Console.WriteLine(" ( 3 )  s3.1MinQueue - Very small Queue size and age limits.");
                 System.Console.WriteLine(" ( A )  Sample A Logic.");
                 System.Console.WriteLine(" ( B )  Sample B - Multiple Different Simultaneous Consumers");
+                System.Console.WriteLine(" ( C )  Sample C - Using Engine");
+                System.Console.WriteLine(" ( Z )  Sample Z - Using Engine");
+
                 System.Console.WriteLine(" ( 0 )  Test Batches Logic.");
                 ConsoleKeyInfo key = System.Console.ReadKey();
 
@@ -85,6 +88,10 @@ namespace StreamProcessor.ConsoleScr
                     case ConsoleKey.C:
                         SampleCApp sampleC = (SampleCApp)_serviceProvider.GetService(typeof(SampleCApp));
                         await sampleC.Start();
+                        break;
+                    case ConsoleKey.Z:
+                        Sample_Z sampleZ = (Sample_Z)_serviceProvider.GetService(typeof(Sample_Z));
+                        await sampleZ.Start();
                         break;
 
                     case ConsoleKey.D0:

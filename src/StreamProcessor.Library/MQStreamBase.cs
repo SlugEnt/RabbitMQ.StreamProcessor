@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using RabbitMQ.Stream.Client;
 using System.Net;
+using ByteSizeLib;
 using Microsoft.Extensions.Logging;
+using RabbitMQ.Stream.Client.Reliable;
 
 namespace SlugEnt.StreamProcessor
 {
@@ -52,6 +54,12 @@ namespace SlugEnt.StreamProcessor
 
 
 
+        /// <summary>
+        /// Sets the stream system logger
+        /// </summary>
+        public ILogger<StreamSystem> StreamLogger { get; protected set; } = null;
+
+
 
 
         /// <summary>
@@ -99,17 +107,20 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Maximum length this stream can be.  Only applicable on newly published streams
         /// </summary>
-        public ulong MaxLength { get; set; } = 0;
+        //public ulong MaxStreamSize { get; set; } = 0;
+
+        public ByteSize MaxStreamSize { get; set; }
+
 
         /// <summary>
         /// Maximum segment size for this stream
         /// </summary>
-        public int MaxSegmentSize { get; set; } = 0;
+        public ByteSize MaxSegmentSize { get; set; }
 
         /// <summary>
         /// Max Age of records in seconds
         /// </summary>
-        public ulong MaxAge { get; set; } = 0;
+        public TimeSpan MaxAge { get; set; } 
 
 
 
@@ -124,10 +135,7 @@ namespace SlugEnt.StreamProcessor
 
             try
             {
-                // Connect to the broker and create the system object
-                // the entry point for the client.
-                // Create it once and reuse it.
-                _streamSystem = await StreamSystem.Create(_config);
+                _streamSystem = await StreamSystem.Create(_config, StreamLogger);
 
 
                 // See if we need Stream Specs.  If it already exists on server we do not.
@@ -135,7 +143,6 @@ namespace SlugEnt.StreamProcessor
                 if (!streamExists)
                 {
                     if (MqStreamType == EnumMQStreamType.Consumer)
-                        // TODO =- Change To Some type of Stream Exception
                         throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
                     else if (_streamSpec == null)
                         throw new StreamSystemInitialisationException(

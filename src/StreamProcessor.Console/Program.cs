@@ -17,40 +17,71 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
+using Spectre.Console;
 using StreamProcessor.Console;
 using StreamProcessor.Console.SampleA;
 using StreamProcessor.Console.SampleB;
 using StreamProcessor.ConsoleScr;
 using StreamProcessor.ConsoleScr.SampleB;
 using StreamProcessor.ConsoleScr.SampleC;
+using Serilog.Core;
+using System;
 
 
 public class Program
 {
-    static Task Main(string[] args)
+    static async Task Main(string[] args)
     {
         Serilog.ILogger Logger;
         Log.Logger = new LoggerConfiguration()
 #if DEBUG
-            .MinimumLevel.Debug()
+            .MinimumLevel.Verbose()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
 #else
 						 .MinimumLevel.Information()
 			             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
 #endif
-            .Enrich.FromLogContext()
+            
             .WriteTo.Console()
             .WriteTo.Debug()
+            .Enrich.FromLogContext()
             .CreateLogger();
 
         Log.Debug("Starting " + Assembly.GetEntryAssembly().FullName);
 
+        Log.Information("Main Info Log");
+        Log.Debug("Main Debug log");
 
+        try
+        {
+            var host = CreateHostBuilder(args).Build();
+            MainMenu mainMenu = host.Services.GetService<MainMenu>();
 
-        var host = CreateHostBuilder(args).Build();
-        MainMenu mainMenu = host.Services.GetService<MainMenu>();
-        mainMenu.Display();
-        return host.RunAsync();
+            ILoggerFactory loggerFactory = host.Services.GetService<ILoggerFactory>();
+            ILogger<Program> plogger = loggerFactory.CreateLogger<Program>();
+            plogger.LogInformation("plogger info");
+            plogger.LogDebug("Plogger debug");
+
+            using (plogger.BeginScope("program scope"))
+            {
+                plogger.LogInformation("some info");
+                plogger.LogDebug("its broke");
+                plogger.LogWarning("warning");
+                plogger.LogCritical("critical");
+                plogger.LogTrace("traced");
+            }
+
+            mainMenu.Display();
+            host.StartAsync();
+            await host.WaitForShutdownAsync();
+            AnsiConsole.WriteLine("Exiting");
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.WriteLine("Error");
+
+        }
+        AnsiConsole.WriteLine("Bye");
     }
 
 
@@ -70,6 +101,7 @@ public class Program
                 services.AddTransient<IMQStreamEngine,MQStreamEngine>();
                 services.AddTransient<ISampleB_Consumer,SampleB_Consumer>();
                 services.AddTransient<ISampleB_Producer, SampleB_Producer>();
+                services.AddTransient<Sample_Z>();
                 services.AddTransient<SampleCApp>();
 
             })

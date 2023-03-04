@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Stream.Client;
+﻿using ByteSizeLib;
+using RabbitMQ.Stream.Client;
 
 namespace SlugEnt.StreamProcessor;
 
@@ -70,17 +71,17 @@ public interface IMqStreamConsumer
     /// <summary>
     /// Maximum length this stream can be.  Only applicable on newly published streams
     /// </summary>
-    ulong MaxLength { get; set; }
+    ByteSize MaxStreamSize { get; set; }
 
     /// <summary>
     /// Maximum segment size for this stream
     /// </summary>
-    int MaxSegmentSize { get; set; }
+    ByteSize MaxSegmentSize { get; set; }
 
     /// <summary>
     /// Max Age of records in seconds
     /// </summary>
-    ulong MaxAge { get; set; }
+    TimeSpan MaxAge { get; set; }
 
     /// <summary>
     /// Initiate the Consumption cycle

@@ -9,6 +9,7 @@ using StreamProcessor.Console;
 using StreamProcessor.Console.SampleB;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
+using ByteSizeLib;
 
 namespace StreamProcessor.ConsoleScr.SampleB;
 
@@ -57,7 +58,7 @@ public class SampleBApp
         _producerB.SetProducerMethod(ProduceMessages);
         
         //new SampleB_Producer(_streamName, "Sample.B.Producer", ProduceMessages);
-        _producerB.SetStreamLimitsRawAsync(1000, 100, 900);
+        _producerB.SetStreamLimits(ByteSize.FromKibiBytes(10), ByteSize.FromKibiBytes(1), TimeSpan.FromMinutes(15));
         
         _producerB.MessageConfirmationError += MessageConfirmationError;
         _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;

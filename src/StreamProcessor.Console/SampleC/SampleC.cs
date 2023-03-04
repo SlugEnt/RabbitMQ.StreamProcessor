@@ -6,7 +6,9 @@ using StreamProcessor.Console.SampleB;
 using StreamProcessor.Console;
 using StreamProcessor.ConsoleScr.SampleB;
 using System.Net;
+using ByteSizeLib;
 using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
 
 namespace StreamProcessor.ConsoleScr.SampleC;
 
@@ -39,6 +41,11 @@ public class SampleCApp
         _logger = logger;
         _serviceProvider = serviceProvider;
 
+        _logger.LogInformation("SampleC Info Log");
+        _logger.LogDebug("SampleC Debug Log");
+
+        BuildStatsObjects();
+        DisplayStats = new DisplayStats(_statsList);
 
         // TODO - Move this to Appsettings
         StreamSystemConfig config = GetStreamSystemConfig();
@@ -50,7 +57,12 @@ public class SampleCApp
         _consumerSlow = _mqStreamEngine.GetConsumer(_streamName,"ConCSlow",ConsumeSlow);
         _consumerFast = _mqStreamEngine.GetConsumer(_streamName, "ConCFast", ConsumeFast);
 
+        // We also want to know when a check point has happened!
+        _consumerSlow.EventCheckPointSaved += OnEventCheckPointSavedSlow;
+        _consumerFast.EventCheckPointSaved += OnEventCheckPointSavedFast;
+
         _producer = _mqStreamEngine.GetProducer(_streamName, "Produce1");
+        _producer.SetStreamLimits(ByteSize.FromMebiBytes(40), ByteSize.FromMebiBytes(4), TimeSpan.FromDays(1) );
     }
 
 
@@ -65,7 +77,8 @@ public class SampleCApp
             await _mqStreamEngine.StartAllStreamsAsync();
 
             // Note - we do not await this!  
-            Task produceMessages =  ProduceMessages();
+            Task produceMessages = new Task(StartProducing);
+            produceMessages.Start();
 
             bool keepProcessingB = true;
             while (keepProcessingB)
@@ -77,7 +90,8 @@ public class SampleCApp
                     {
                         keepProcessingB = false;
                         _stopping = true;
-                        await produceMessages;
+                        AnsiConsole.WriteLine($"Stopping the producer... ");
+                        await _mqStreamEngine.StopAllAsync();
                         return;
                     }
                 }
@@ -87,7 +101,7 @@ public class SampleCApp
                 System.Console.WriteLine($"Circuit Breaker Status: {_producer.CircuitBreakerTripped}");
 
                 UpdateStats();
-                DisplayStats.Refresh();
+            //    DisplayStats.Refresh();
                 Thread.Sleep(1000);
 
             }
@@ -99,6 +113,10 @@ public class SampleCApp
         System.Console.WriteLine($"Sample C has completed all processing.");
     }
 
+    protected void StartProducing()
+    {
+        ProduceMessages();
+    }
 
 
     private void BuildStatsObjects()
@@ -239,10 +257,12 @@ public class SampleCApp
     {
         _statsList[1].ConsumedMessages++;
         _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+        System.Console.WriteLine("Slow Consumed:");
         //        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.CheckpointLastOffset;
         _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerSlow.CheckpointOffsetCounter;
         // Simulate slow
-        Thread.Sleep(1500);
+        await Task.Delay(1000);
+        //Thread.Sleep(1500);
         return true;
     }
 

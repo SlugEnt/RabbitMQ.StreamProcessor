@@ -11,7 +11,7 @@ public class MockMQProducer : MqStreamProducer, IMqStreamProducer
     private Queue<Message> _messagesProduced = new Queue<Message>();
 
 
-    public MockMQProducer(ILogger<MqStreamProducer> logger) : base(logger)
+    public MockMQProducer(ILogger<MqStreamProducer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
     {
 
     }

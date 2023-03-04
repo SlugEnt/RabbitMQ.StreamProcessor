@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Stream.Client;
+﻿using ByteSizeLib;
+using RabbitMQ.Stream.Client;
 
 namespace SlugEnt.StreamProcessor;
 
@@ -80,17 +81,17 @@ public interface IMqStreamProducer
     /// <summary>
     /// Maximum length this stream can be.  Only applicable on newly published streams
     /// </summary>
-    ulong MaxLength { get; set; }
+    ByteSize MaxStreamSize { get; set; }
 
     /// <summary>
     /// Maximum segment size for this stream
     /// </summary>
-    int MaxSegmentSize { get; set; }
+    ByteSize MaxSegmentSize { get; set; }
 
     /// <summary>
     /// Max Age of records in seconds
     /// </summary>
-    ulong MaxAge { get; set; }
+    TimeSpan MaxAge { get; set; }
 
     /// <summary>
     /// Performs a check to see if the circuit breaker should be reset.  Should not normally be needed
@@ -140,22 +141,8 @@ public interface IMqStreamProducer
     /// <param name="maxSegmentSize"></param>
     /// <param name="maxAgeInSeconds"></param>
     /// <returns></returns>
-    Task SetStreamLimitsRawAsync(ulong maxLength, int maxSegmentSize, ulong maxAgeInSeconds);
+    void SetStreamLimits(ByteSize maxLength, ByteSize maxSegmentSize, TimeSpan maxAgeInSeconds);
 
-    /// <summary>
-    /// Sets the Stream Limits in more typical units of measure
-    /// </summary>
-    /// <param name="maxBytesInMb"></param>
-    /// <param name="maxSegmentSizeInMb"></param>
-    /// <param name="maxAgeInHours"></param>
-    /// <returns></returns>
-    Task SetStreamLimitsAsync(int maxBytesInMb = 1, int maxSegmentSizeInMb = 1, ulong maxAgeInHours = 24);
-
-    /// <summary>
-    /// This is temporary so I can continue to use my sample queue.  
-    /// </summary>
-    /// <returns></returns>
-    Task SetStreamLimitsSmallAsync();
 
     /// <summary>
     /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event

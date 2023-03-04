@@ -2,8 +2,10 @@
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 using System.Text;
+using ByteSizeLib;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client.AMQP;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SlugEnt.StreamProcessor
 {
@@ -30,10 +32,21 @@ namespace SlugEnt.StreamProcessor
         /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
         /// </param>
         /// </summary>
-        public MqStreamProducer(ILogger<MqStreamProducer> logger) : base(logger, EnumMQStreamType.Producer)
+        public MqStreamProducer(ILogger<MqStreamProducer> logger, IServiceProvider serviceProvider) : base(logger, EnumMQStreamType.Producer)
         {
             _retryMessagesQueue = new ConcurrentQueue<Message>();
+            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            ILogger<StreamSystem> streamLogger = loggerFactory.CreateLogger<StreamSystem>();
+            ProducerLogger = loggerFactory.CreateLogger<Producer>();
+            this.StreamLogger = streamLogger;
         }
+
+
+        /// <summary>
+        /// The logger for the producer.
+        /// </summary>
+        protected ILogger<Producer> ProducerLogger { get; set; }
+
 
 
         /// <summary>
@@ -143,9 +156,8 @@ namespace SlugEnt.StreamProcessor
                     // Is not necessary if sending from 1 thread.
                     //Reference = Guid.NewGuid().ToString(),
 
-
                     ConfirmationHandler = OnConfirmation
-                });
+                },ProducerLogger);
         }
 
 
@@ -352,20 +364,6 @@ namespace SlugEnt.StreamProcessor
         }
 
 
-        /// <summary>
-        /// Sets the stream specifications in its raw RabbitMQ requested units of measure
-        /// </summary>
-        /// <param name="maxLength"></param>
-        /// <param name="maxSegmentSize"></param>
-        /// <param name="maxAgeInSeconds"></param>
-        /// <returns></returns>
-        public async Task SetStreamLimitsRawAsync(ulong maxLength, int maxSegmentSize, ulong maxAgeInSeconds)
-        {
-            MaxAge = maxAgeInSeconds;
-            MaxLength = maxLength;
-            MaxSegmentSize = maxSegmentSize;
-            GenerateStreamSpec();
-        }
 
         // TODO - No idea why SetStreamLimitsAsync needs to be async.  Remove async
 
@@ -376,12 +374,12 @@ namespace SlugEnt.StreamProcessor
         /// <param name="maxSegmentSizeInMb"></param>
         /// <param name="maxAgeInHours"></param>
         /// <returns></returns>
-        public async Task SetStreamLimitsAsync(int maxBytesInMb = 1, int maxSegmentSizeInMb = 1, ulong maxAgeInHours = 24)
+        public void SetStreamLimits(ByteSize maxStreamSize, ByteSize maxSegmentSizeInMb, TimeSpan maxAge)
         {
             // Convert Values to bytes
-            MaxLength = (ulong)maxBytesInMb * 1024 * 1024;
-            MaxSegmentSize = maxSegmentSizeInMb * 1024 * 1024;
-            MaxAge = maxAgeInHours * 24 * 60 * 60;
+            MaxStreamSize = maxStreamSize;
+            MaxSegmentSize = maxSegmentSizeInMb;
+            MaxAge = maxAge;
 
             GenerateStreamSpec();
         }
@@ -394,24 +392,22 @@ namespace SlugEnt.StreamProcessor
         /// <exception cref="ArgumentException"></exception>
         private void GenerateStreamSpec()
         {
-            if (MaxLength == 0)
+            if (MaxStreamSize == ByteSize.FromBytes(0))
                 throw new ArgumentException(
                     "maxLength is zero.  You need to specify values > 0 for all 3 limits or call the method SetNoStreamLimits.");
-            if (MaxSegmentSize == 0)
+            if (MaxSegmentSize == ByteSize.FromBytes(0))
                 throw new ArgumentException(
                     "maxSegmentSize is zero.  You need to specify values > 0 for all 3 limits or call the method SetNoStreamLimits.");
-            if (MaxAge == 0)
+            if (MaxAge == TimeSpan.Zero)
                 throw new ArgumentException(
                     "maxAge is zero.  You need to specify values > 0 for all 3 limits or call the method SetNoStreamLimits.");
 
 
-            TimeSpan maxAge = TimeSpan.FromSeconds(MaxAge);
-
             _streamSpec = new StreamSpec(_mqStreamName)
             {
-                MaxAge = maxAge,
-                MaxLengthBytes = MaxLength,
-                MaxSegmentSizeBytes = MaxSegmentSize
+                MaxAge = MaxAge,
+                MaxLengthBytes = (ulong)MaxStreamSize.Bytes,
+                MaxSegmentSizeBytes = (int)MaxSegmentSize.Bytes
             };
         }
 
