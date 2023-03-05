@@ -14,7 +14,7 @@
     <RepositoryUrl>https://github.com/SlugEnt/RabbitMQ.StreamProcessor</RepositoryUrl>
     <PackageReleaseNotes>Alpha Development</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +31,7 @@
   <ItemGroup>
     <PackageReference Include="ByteSize" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageReference Include="RabbitMQ.Stream.Client" Version="1.1.1" />
+    <PackageReference Include="RabbitMQ.Stream.Client" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
