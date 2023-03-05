@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
@@ -21,7 +22,7 @@ namespace StreamProcessor.ConsoleScr.SampleB
         //private Func<Message, Task<bool>> _consumptionHandler;
         private ILogger<SampleB_Consumer> _logger;
 
-        public SampleB_Consumer(ILogger<SampleB_Consumer> logger) : base(logger) //string streamName, string appName, Func<Message, Task<bool>> consumptionHandler, ILogger<SampleB_Consumer> logger) : base(streamName, appName)
+        public SampleB_Consumer(ILogger<SampleB_Consumer> logger, ServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
             _logger = logger;
             //_consumptionHandler = consumptionHandler;

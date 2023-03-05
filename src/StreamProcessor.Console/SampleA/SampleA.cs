@@ -19,8 +19,8 @@ public class SampleA
     {
         // Build a producer
  /*       _producerA = new SampleA_Producer(_streamName, "Sample.A.Producer", ProduceMessages);
-        _producerA.SetStreamLimitsRaw(1000, 100, 900);
-//        _producerA.SetStreamLimits(3, 1, 36);
+        _producerA.SetStreamLimitsRawAsync(1000, 100, 900);
+//        _producerA.SetStreamLimitsAsync(3, 1, 36);
         _messagesInBatch = messagesInBatch;
         _producerA.MessageConfirmationError += MessageConfirmationError;
         _producerA.MessageConfirmationSuccess += MessageConfirmationSuccess;
@@ -75,14 +75,14 @@ public class SampleA
                 message.Properties.ReplyTo = "scott";
                 
                 if (!producer.CircuitBreakerTripped) 
-                    await producer.SendMessage(message);
+                    await producer.SendMessageAsync(message);
                 else
                 {
                     bool keepTrying = true;
                     while (keepTrying)
                     {
                         if (producer.CircuitBreakerTripped) Thread.Sleep(2000);
-                        else await producer.SendMessage(message);
+                        else await producer.SendMessageAsync(message);
                     }
                 }
             }

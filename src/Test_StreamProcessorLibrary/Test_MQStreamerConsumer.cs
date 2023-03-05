@@ -23,7 +23,6 @@ public class Test_MQStreamerConsumer
         MqTesterConsumer consumerTst = Helpers.SetupConsumer();
         string value = consumerTst.DecodeMessage(newMessage);
         Assert.AreEqual(messageText,value,"A10:");
-
     }
 
 
@@ -40,7 +39,7 @@ public class Test_MQStreamerConsumer
 
 
         // Manual Set of Check Point 
-        await consumerTst.CheckPointSet();
+        await consumerTst.CheckPointSetAsync();
         Assert.AreEqual(0,consumerTst.CheckpointOffsetCounter, "C200:");
         Assert.Greater(consumerTst.CheckpointLastDateTime,currentDateTime,"C210:");
     }
@@ -69,11 +68,25 @@ public class Test_MQStreamerConsumer
 
 
         // Manual Set of Check Point 
-        await consumerTst.CheckPointSet();
+        await consumerTst.CheckPointSetAsync();
         Assert.AreEqual(0, consumerTst.CheckpointOffsetCounter, "C200:");
         Assert.Greater(consumerTst.CheckpointLastDateTime, currentDateTime, "C210:");
         Assert.AreEqual(qtyToSend, consumerTst.CheckpointLastOffset, "C220:");
     }
 
 
+    [Test]
+    public async Task StopAsyncClosesConnection()
+    {
+        // A. Setup
+        MqTesterConsumer consumerTst = Helpers.SetupConsumer();
+
+        // B. Make Sure is connected.
+        Assert.IsTrue(consumerTst.IsConnected,"B10:");
+        
+        // C. Close it and make sure not connected
+        await consumerTst.StopAsync();
+        Assert.IsFalse(consumerTst.IsConnected,"C10");
+
+    }
 }

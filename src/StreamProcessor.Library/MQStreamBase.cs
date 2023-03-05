@@ -1,14 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using RabbitMQ.Stream.Client;
 using System.Net;
+using ByteSizeLib;
 using Microsoft.Extensions.Logging;
+using RabbitMQ.Stream.Client.Reliable;
 
 namespace SlugEnt.StreamProcessor
 {
     /// <summary>
     /// The base for the MQStreamProducer and MQStreamConsumer classes
     /// </summary>
-    public abstract class MQStreamBase
+    public abstract class MQStreamBase 
     {
         protected string _mqStreamName = "";
         protected StreamSystemConfig _config;
@@ -45,11 +47,21 @@ namespace SlugEnt.StreamProcessor
                 throw new ArgumentException(
                     "The ApplicationName must be specified and it must be unique for a given application");
 
-
             _config = streamConfig;
-
+            IsInitialized = true;
         }
 
+
+        /// <summary>
+        /// True if the Stream has been initialized
+        /// </summary>
+        public bool IsInitialized { get; protected set; } = false;
+
+
+        /// <summary>
+        /// Sets the stream system logger
+        /// </summary>
+        public ILogger<StreamSystem> StreamLogger { get; protected set; } = null;
 
 
 
@@ -73,6 +85,14 @@ namespace SlugEnt.StreamProcessor
 
 
         /// <summary>
+        /// Builds the Fullname for this MQStream.
+        /// <para>Fullname is stream name combined with application name</para>">
+        /// </summary>
+        public string FullName { get { return MQStreamName + "." + ApplicationName; } }
+
+
+
+        /// <summary>
         /// Number of messages published or consumed depending on type of stream
         /// </summary>
         public ulong MessageCounter { get; protected set; } = 0;
@@ -91,17 +111,20 @@ namespace SlugEnt.StreamProcessor
         /// <summary>
         /// Maximum length this stream can be.  Only applicable on newly published streams
         /// </summary>
-        public ulong MaxLength { get; set; } = 0;
+        //public ulong MaxStreamSize { get; set; } = 0;
+
+        public ByteSize MaxStreamSize { get; set; }
+
 
         /// <summary>
         /// Maximum segment size for this stream
         /// </summary>
-        public int MaxSegmentSize { get; set; } = 0;
+        public ByteSize MaxSegmentSize { get; set; }
 
         /// <summary>
         /// Max Age of records in seconds
         /// </summary>
-        public ulong MaxAge { get; set; } = 0;
+        public TimeSpan MaxAge { get; set; } 
 
 
 
@@ -110,35 +133,35 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         /// <returns></returns>
         /// <exception cref="ApplicationException"></exception>
-        public async Task ConnectAsync()
+        public virtual async Task ConnectAsync()
         {
             if (IsConnected) return;
 
-            // Connect to the broker and create the system object
-            // the entry point for the client.
-            // Create it once and reuse it.
-            _streamSystem = await StreamSystem.Create(_config);
-
-
-            // See if we need Stream Specs.  If it already exists on server we do not.
-            bool streamExists = await RabbitMQ_StreamExists(_mqStreamName);
-            if (! streamExists)
+            try
             {
-                if (MqStreamType == EnumMQStreamType.Consumer)
-                    // TODO =- Change To Some type of Stream Exception
-                    throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
-                else if (_streamSpec == null)
-                    throw new StreamSystemInitialisationException(
-                        "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimits first.");
+                _streamSystem = await StreamSystem.Create(_config, StreamLogger);
 
-                // Connect to the Stream
-                _streamSystem.CreateStream(_streamSpec);
+
+                // See if we need Stream Specs.  If it already exists on server we do not.
+                bool streamExists = await RabbitMQ_StreamExists(_mqStreamName);
+                if (!streamExists)
+                {
+                    if (MqStreamType == EnumMQStreamType.Consumer)
+                        throw new StreamSystemInitialisationException("Stream - " + _mqStreamName + " does not exist.");
+                    else if (_streamSpec == null)
+                        throw new StreamSystemInitialisationException(
+                            "For new Producer Streams you must set Stream Limits prior to this call.  Call either SetNoStreamLimits or SetStreamLimitsAsync first.");
+
+                    // Connect to the Stream
+                    _streamSystem.CreateStream(_streamSpec);
+                }
+                else
+                    // Connect to the Stream - But use the existing definition
+                    _streamSystem.CreateStream(null);
+
+                if (_streamSystem != null) IsConnected = true;
             }
-            else
-                // Connect to the Stream - But use the existing definition
-                _streamSystem.CreateStream(null);
-
-            if (_streamSystem != null) IsConnected = true;
+            catch (Exception ex) { _logger.LogError($"Error connecting to RabbitMQ Stream - {ex.Message}");}
         }
 
 
@@ -158,15 +181,36 @@ namespace SlugEnt.StreamProcessor
         /// Permanently deletes the Stream off the RabbitMQ Servers.
         /// </summary>
         /// <returns></returns>
-        public async Task DeleteStream()
+        public async Task DeleteStreamFromRabbitMQ()
         {
             await _streamSystem.DeleteStream(_mqStreamName);
         }
+
+
 
         public async Task StreamInfo()
         {
          
         }
+
+
+
+        /// <summary>
+        /// Closes the connection to MQ.
+        /// </summary>
+        protected async Task CloseStreamAsync()
+        {
+            // Delete the stream and disconnect.
+            await _streamSystem.Close();
+            IsConnected = false;
+        }
+
+
+        /// <summary>
+        /// Stops the producer / stream.
+        /// </summary>
+        /// <returns></returns>
+        public abstract Task StopAsync();
 
 
         // These are Message.ApplicationProperties Keys that are used

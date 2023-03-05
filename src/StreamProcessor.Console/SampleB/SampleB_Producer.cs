@@ -26,7 +26,7 @@ public class SampleB_Producer : MqStreamProducer, IMqStreamProducer, ISampleB_Pr
     /// <param name="mqStreamName"></param>
     /// <param name="appName"></param>
     /// <param name="produceMessagesMethod">Method that should be called to produce messages</param>
-    public SampleB_Producer(ILogger<SampleB_Producer> logger) : base(logger)
+    public SampleB_Producer(ILogger<SampleB_Producer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
     {
         //_produceMessagesMethod = produceMessagesMethod;
     }

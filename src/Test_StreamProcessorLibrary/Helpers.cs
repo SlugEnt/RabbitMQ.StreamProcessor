@@ -22,7 +22,7 @@ public static class Helpers
 
         for (i = startingMsgNumber; i < x; i++)
         {
-            producerTst.SendMessage("Msq #" + i);
+            producerTst.SendMessageAsync("Msq #" + i);
         }
 
         return i;

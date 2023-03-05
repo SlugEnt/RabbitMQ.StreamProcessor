@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Stream.Client.Reliable;
 using SlugEnt.StreamProcessor;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
 
@@ -25,7 +26,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name="streamName"></param>
     /// <param name="appName"></param>
-    public MqTesterConsumer(ILogger<MqTesterConsumer> logger) : base(logger)
+    public MqTesterConsumer(ILogger<MqTesterConsumer> logger, ServiceProvider serviceProvider) : base(logger,serviceProvider)
     {
         // Automatically assume we are connected.
         IsConnected = true;
@@ -55,7 +56,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name="offset"></param>
     /// <returns></returns>
-    protected override async Task RabbitMQ_StoreOffset(ulong offset)
+    protected override async Task RabbitMQ_StoreOffsetAsync(ulong offset)
     {
         _rabbitMQ_StoredOffset = offset;
     }
@@ -65,7 +66,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// Override the Query Offset Method
     /// </summary>
     /// <returns></returns>
-    protected override async Task<IOffsetType> RabbitMQQueryOffset()
+    protected override async Task<IOffsetType> RabbitMQQueryOffsetAsync()
     {
         IOffsetType offsetType = new OffsetTypeOffset(_msgOffsetID);
         return offsetType;
@@ -87,7 +88,7 @@ public class MqTesterConsumer : MqStreamConsumer
         foreach (Message message in _messagesToConsume)
         {
             MessageContext msgContext = new(++_msgOffsetID,TimeSpan.FromMilliseconds(-1));
-            await ProcessMessage(msgContext, message);
+            await ProcessMessageAsync(msgContext, message);
         }
     }
 
