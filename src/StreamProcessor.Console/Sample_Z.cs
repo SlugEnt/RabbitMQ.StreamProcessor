@@ -129,6 +129,8 @@ namespace StreamProcessor.ConsoleScr
                         OffsetSpec = new OffsetTypeFirst(), // <2>
                         MessageHandler = async (sourceStream, consumer, messageContext, message) => // <3>
                         {
+                            System.Console.WriteLine($"Message: {consumerCount}");
+
                             if (Interlocked.Increment(ref consumerCount) == MessageCount)
                             {
                                 System.Console.WriteLine("*********************************");
@@ -137,6 +139,8 @@ namespace StreamProcessor.ConsoleScr
                                 consumerTaskCompletionSource.SetResult(MessageCount);
                             }
 
+                            if (consumerCount == 10)
+                                await consumer.Close().ConfigureAwait(false);
                             await Task.CompletedTask.ConfigureAwait(false);
                         }
                     },

@@ -498,17 +498,16 @@ namespace SlugEnt.StreamProcessor
         }
 
 
-
         /// <summary>
-        /// Closes the connection to MQ.
+        /// Closes the producer.
         /// </summary>
-        public async Task StopAsync()
+        /// <returns></returns>
+        public override async Task StopAsync()
         {
-            // Delete the stream and disconnect.
-            await _streamSystem.Close();
+            await base.CloseStreamAsync();
+            _producer.Close();
             IsConnected = false;
         }
-
 
 
         //##############################################    ########################################################

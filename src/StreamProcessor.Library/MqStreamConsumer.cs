@@ -42,6 +42,8 @@ namespace SlugEnt.StreamProcessor
         protected ILogger<RawConsumer> RawConsumerLogger { get; set; }
 
 
+ 
+
         /// <summary>
         /// The offset of the last message successfully received
         /// </summary>
@@ -254,11 +256,13 @@ namespace SlugEnt.StreamProcessor
         /// Stops the consumption of messages.
         /// </summary>
         /// <returns></returns>
-        public async Task StopAsync()
+        public override async Task StopAsync()
         {
-            await _streamSystem.Close().ConfigureAwait(false);
-            
+            // Must call Dispose.  The Client Library will re-open the closed connection and continue sending messages.
+            await CloseStreamAsync();
+            _rawConsumer.Dispose();
             IsConnected = false;
+
         }
 
 

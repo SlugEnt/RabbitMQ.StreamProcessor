@@ -47,11 +47,15 @@ namespace SlugEnt.StreamProcessor
                 throw new ArgumentException(
                     "The ApplicationName must be specified and it must be unique for a given application");
 
-
             _config = streamConfig;
-
+            IsInitialized = true;
         }
 
+
+        /// <summary>
+        /// True if the Stream has been initialized
+        /// </summary>
+        public bool IsInitialized { get; protected set; } = false;
 
 
         /// <summary>
@@ -177,7 +181,7 @@ namespace SlugEnt.StreamProcessor
         /// Permanently deletes the Stream off the RabbitMQ Servers.
         /// </summary>
         /// <returns></returns>
-        public async Task DeleteStream()
+        public async Task DeleteStreamFromRabbitMQ()
         {
             await _streamSystem.DeleteStream(_mqStreamName);
         }
@@ -191,6 +195,22 @@ namespace SlugEnt.StreamProcessor
 
 
 
+        /// <summary>
+        /// Closes the connection to MQ.
+        /// </summary>
+        protected async Task CloseStreamAsync()
+        {
+            // Delete the stream and disconnect.
+            await _streamSystem.Close();
+            IsConnected = false;
+        }
+
+
+        /// <summary>
+        /// Stops the producer / stream.
+        /// </summary>
+        /// <returns></returns>
+        public abstract Task StopAsync();
 
 
         // These are Message.ApplicationProperties Keys that are used

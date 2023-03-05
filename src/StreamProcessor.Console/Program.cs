@@ -57,6 +57,7 @@ public class Program
             var host = CreateHostBuilder(args).Build();
             MainMenu mainMenu = host.Services.GetService<MainMenu>();
 
+            /*
             ILoggerFactory loggerFactory = host.Services.GetService<ILoggerFactory>();
             ILogger<Program> plogger = loggerFactory.CreateLogger<Program>();
             plogger.LogInformation("plogger info");
@@ -70,7 +71,7 @@ public class Program
                 plogger.LogCritical("critical");
                 plogger.LogTrace("traced");
             }
-
+            */
             mainMenu.Display();
             host.StartAsync();
             await host.WaitForShutdownAsync();

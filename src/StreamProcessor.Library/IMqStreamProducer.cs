@@ -6,7 +6,7 @@ namespace SlugEnt.StreamProcessor;
 /// <summary>
 /// Interface for the MQ Stream Producer class
 /// </summary>
-public interface IMqStreamProducer
+public interface IMqStreamProducer : IMQStreamBase
 {
     /// <summary>
     /// This tells you how many errors have been detected without a successful message.  Anytime a message is successfully confirmed this
@@ -43,40 +43,6 @@ public interface IMqStreamProducer
     /// </summary>
     bool AutoRetryFailedConfirmations { get; set; }
 
-    /// <summary>
-    /// The application that owns this Stream Process.
-    /// It is used when checkpointing the Stream and is tagged in the message properties when creating the message
-    /// </summary>
-    string ApplicationName { get; }
-
-
-    /// <summary>
-    /// The name of the stream we publish and consume messages from
-    /// </summary>
-    string MQStreamName { get; }
-
-
-    /// <summary>
-    /// Returns the Fullname for this MQStream.
-    /// <para>Fullname is stream name combined with application name</para>">
-    /// </summary>
-    public string FullName { get; }
-
-
-    /// <summary>
-    /// Number of messages published or consumed depending on type of stream
-    /// </summary>
-    ulong MessageCounter { get; }
-
-    /// <summary>
-    /// Whether this stream is a publisher or consumer
-    /// </summary>
-    EnumMQStreamType MqStreamType { get; }
-
-    /// <summary>
-    /// Whether the stream is connected
-    /// </summary>
-    bool IsConnected { get; }
 
     /// <summary>
     /// Maximum length this stream can be.  Only applicable on newly published streams
@@ -154,35 +120,7 @@ public interface IMqStreamProducer
     /// </summary>
     event EventHandler<MessageConfirmationEventArgs> MessageConfirmationSuccess;
 
-    /// <summary>
-    /// Initializes the Stream
-    /// </summary>
-    /// <param name="mqStreamName"></param>
-    /// <param name="applicationName">This is the name of the application that owns this Stream process.
-    /// It must be unique as it is used when Checkpointing streams and is used as the Message source when creating messages.</param>
-    void Initialize(string mqStreamName, string applicationName, StreamSystemConfig config);
 
-    /// <summary>
-    /// Establishes a connection to the stream on the RabbitMQ server(s).
-    /// </summary>
-    /// <returns></returns>
-    /// <exception cref="ApplicationException"></exception>
-    Task ConnectAsync();
-
-    /// <summary>
-    /// Permanently deletes the Stream off the RabbitMQ Servers.
-    /// </summary>
-    /// <returns></returns>
-    Task DeleteStream();
-
-    Task StreamInfo();
-
-
-
-    /// <summary>
-    /// Closes the connection to MQ.
-    /// </summary>
-    public Task StopAsync();
 }
 
 

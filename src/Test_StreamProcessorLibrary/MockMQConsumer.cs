@@ -84,7 +84,7 @@ namespace Test_StreamProcessorLibrary
             
         }
 
-        public Task StopAsync()
+        public override  Task StopAsync()
         {
             IsConnected = false;
             return Task.CompletedTask;

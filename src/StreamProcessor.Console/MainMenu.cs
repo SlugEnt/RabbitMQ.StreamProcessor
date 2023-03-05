@@ -114,7 +114,7 @@ namespace StreamProcessor.ConsoleScr
                 System.Console.WriteLine("Press any key to exit the application.  Press D to delete the stream");
                 ConsoleKeyInfo key2 = System.Console.ReadKey();
 
-                if ((key2.Key == ConsoleKey.D) && (deleteStream)) consumer.DeleteStream();
+                if ((key2.Key == ConsoleKey.D) && (deleteStream)) consumer.DeleteStreamFromRabbitMQ();
             }
             catch (Exception ex)
             {
