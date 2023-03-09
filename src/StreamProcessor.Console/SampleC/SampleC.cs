@@ -19,7 +19,7 @@ public class SampleCApp
 
     private string _streamName = "Sample.C";
 
-    private IMQStreamEngine _mqStreamEngine;
+    private IMQStreamEngine   _mqStreamEngine;
     private IMqStreamProducer _producer;
     private IMqStreamConsumer _consumerSlow;
     private IMqStreamConsumer _consumerFast;
@@ -28,17 +28,17 @@ public class SampleCApp
 
     private string _batch;
 
-    private short statsListSize = 10;
+    private short       statsListSize = 10;
     private List<Stats> _statsList;
 
     private ILogger<SampleBApp> _logger;
-    private IServiceProvider _serviceProvider;
+    private IServiceProvider    _serviceProvider;
 
 
 
     public SampleCApp(ILogger<SampleBApp> logger, IServiceProvider serviceProvider)
     {
-        _logger = logger;
+        _logger          = logger;
         _serviceProvider = serviceProvider;
 
         _logger.LogInformation("SampleC Info Log");
@@ -50,11 +50,11 @@ public class SampleCApp
         // TODO - Move this to Appsettings
         StreamSystemConfig config = GetStreamSystemConfig();
 
-        _mqStreamEngine =_serviceProvider.GetService<IMQStreamEngine>();
+        _mqStreamEngine                    = _serviceProvider.GetService<IMQStreamEngine>();
         _mqStreamEngine.StreamSystemConfig = config;
 
         // Get Producer / Consumers
-        _consumerSlow = _mqStreamEngine.GetConsumer(_streamName,"ConCSlow",ConsumeSlow);
+        _consumerSlow = _mqStreamEngine.GetConsumer(_streamName, "ConCSlow", ConsumeSlow);
         _consumerFast = _mqStreamEngine.GetConsumer(_streamName, "ConCFast", ConsumeFast);
 
         // We also want to know when a check point has happened!
@@ -62,7 +62,7 @@ public class SampleCApp
         _consumerFast.EventCheckPointSaved += OnEventCheckPointSavedFast;
 
         _producer = _mqStreamEngine.GetProducer(_streamName, "Produce1");
-        _producer.SetStreamLimits(ByteSize.FromMebiBytes(40), ByteSize.FromMebiBytes(4), TimeSpan.FromDays(1) );
+        _producer.SetStreamLimits(ByteSize.FromMebiBytes(40), ByteSize.FromMebiBytes(4), TimeSpan.FromDays(1));
     }
 
 
@@ -89,7 +89,7 @@ public class SampleCApp
                     if (d1KeyInfo.Key == ConsoleKey.X)
                     {
                         keepProcessingB = false;
-                        _stopping = true;
+                        _stopping       = true;
                         AnsiConsole.WriteLine($"Stopping the producer... ");
                         await _mqStreamEngine.StopAllAsync();
                         return;
@@ -101,28 +101,29 @@ public class SampleCApp
                 System.Console.WriteLine($"Circuit Breaker Status: {_producer.CircuitBreakerTripped}");
 
                 UpdateStats();
-            //    DisplayStats.Refresh();
-                Thread.Sleep(1000);
 
+                //    DisplayStats.Refresh();
+                Thread.Sleep(5000);
             }
         }
-        catch (Exception ex) { System.Console.WriteLine("Exception {0}", ex.Message); }
+        catch (Exception ex)
+        {
+            System.Console.WriteLine("Exception {0}", ex.Message);
+        }
 
         await _mqStreamEngine.StopAllAsync();
 
         System.Console.WriteLine($"Sample C has completed all processing.");
     }
 
-    protected void StartProducing()
-    {
-        ProduceMessages();
-    }
+
+    protected void StartProducing() { ProduceMessages(); }
 
 
     private void BuildStatsObjects()
     {
         _statsList = new List<Stats>();
-        Stats producerStats = new Stats("Producer");
+        Stats producerStats  = new Stats("Producer");
         Stats consumerStatsA = new Stats("Cons Slow");
         Stats consumerStatsB = new Stats("Cons Fast");
         Stats consumerStatsC = new Stats("ConsC");
@@ -143,16 +144,16 @@ public class SampleCApp
     /// The number of messages that should be produced per batch
     /// </summary>
     public short MessagesPerBatch { get; set; } = 6;
+
     public int IntervalInSecondsBetweenBatches { get; set; } = 3;
 
 
 
     private void UpdateStats()
     {
-        _statsList[0].SuccessMessages = _producer.Stat_MessagesSuccessfullyConfirmed;
-        _statsList[0].FailureMessages = _producer.Stat_MessagesErrored;
+        _statsList[0].SuccessMessages       = _producer.Stat_MessagesSuccessfullyConfirmed;
+        _statsList[0].FailureMessages       = _producer.Stat_MessagesErrored;
         _statsList[0].CircuitBreakerTripped = _producer.CircuitBreakerTripped;
-
     }
 
 
@@ -172,9 +173,9 @@ public class SampleCApp
                 // Publish the messages
                 for (short i = 0; i < MessagesPerBatch; i++)
                 {
-                    string fullBatchId = _batch + i;
-                    string msg = String.Format($"Id: {i} ");
-                    Message message = _producer.CreateMessage(msg);
+                    string  fullBatchId = _batch + i;
+                    string  msg         = String.Format($"Id: {i} ");
+                    Message message     = _producer.CreateMessage(msg);
 
                     string fullBatch = _batch.ToString() + i.ToString();
                     message.ApplicationProperties.Add(AP_BATCH, fullBatch);
@@ -189,16 +190,22 @@ public class SampleCApp
                         bool keepTrying = true;
                         while (keepTrying)
                         {
-                            if (_stopping) return;
-                            if (_producer.CircuitBreakerTripped) Thread.Sleep(2000);
-                            else await _producer.SendMessageAsync(message);
+                            if (_stopping)
+                                return;
+
+                            if (_producer.CircuitBreakerTripped)
+                                Thread.Sleep(2000);
+                            else
+                                await _producer.SendMessageAsync(message);
                         }
                     }
 
-                    if (_stopping) break;
+                    if (_stopping)
+                        break;
                 }
 
                 _batch = HelperFunctions.NextBatch(_batch);
+
                 //DisplayStats.Refresh();
                 Thread.Sleep(IntervalInSecondsBetweenBatches * 1000);
             }
@@ -212,10 +219,13 @@ public class SampleCApp
     private void MessageConfirmationError(object sender, MessageConfirmationEventArgs e)
     {
         _statsList[0].FailureMessages++;
-        bool success = e.Status == ConfirmationStatus.Confirmed ? true : false;
-        ConfirmationMessage cm = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
+        bool                success = e.Status == ConfirmationStatus.Confirmed ? true : false;
+        ConfirmationMessage cm      = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
         _statsList[0].ProducedMessages.Add(cm);
-        if (_statsList[0].ProducedMessages.Count > statsListSize) { _statsList[0].ProducedMessages.RemoveAt(0); }
+        if (_statsList[0].ProducedMessages.Count > statsListSize)
+        {
+            _statsList[0].ProducedMessages.RemoveAt(0);
+        }
 
         string batch = GetBatch(e);
 
@@ -225,27 +235,25 @@ public class SampleCApp
 
     private void MessageConfirmationSuccess(object sender, MessageConfirmationEventArgs e)
     {
-        string batch = GetBatch(e);
-        bool success = e.Status == ConfirmationStatus.Confirmed ? true : false;
-        ConfirmationMessage cm = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
+        string              batch   = GetBatch(e);
+        bool                success = e.Status == ConfirmationStatus.Confirmed ? true : false;
+        ConfirmationMessage cm      = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
         _statsList[0].ProducedMessages.Add(cm);
-        if (_statsList[0].ProducedMessages.Count > statsListSize) { _statsList[0].ProducedMessages.RemoveAt(0); }
+        if (_statsList[0].ProducedMessages.Count > statsListSize)
+        {
+            _statsList[0].ProducedMessages.RemoveAt(0);
+        }
 
         _statsList[0].SuccessMessages++;
+
         //HelperFunctions.WriteInColor($"Success:  MSg Batch:  {batch}", ConsoleColor.Green);
     }
 
 
-    private void OnEventCheckPointSavedSlow(object sender, MqStreamCheckPointEventArgs e)
-    {
-        _statsList[1].ConsumeLastCheckpoint = e.CommittedOffset;
-    }
+    private void OnEventCheckPointSavedSlow(object sender, MqStreamCheckPointEventArgs e) { _statsList[1].ConsumeLastCheckpoint = e.CommittedOffset; }
 
 
-    private void OnEventCheckPointSavedFast(object sender, MqStreamCheckPointEventArgs e)
-    {
-        _statsList[2].ConsumeLastCheckpoint = e.CommittedOffset;
-    }
+    private void OnEventCheckPointSavedFast(object sender, MqStreamCheckPointEventArgs e) { _statsList[2].ConsumeLastCheckpoint = e.CommittedOffset; }
 
 
     /// <summary>
@@ -258,11 +266,12 @@ public class SampleCApp
         _statsList[1].ConsumedMessages++;
         _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
         System.Console.WriteLine("Slow Consumed:");
+
         //        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.CheckpointLastOffset;
         _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerSlow.CheckpointOffsetCounter;
+
         // Simulate slow
         await Task.Delay(1000);
-        //Thread.Sleep(1500);
         return true;
     }
 
@@ -275,11 +284,11 @@ public class SampleCApp
     private async Task<bool> ConsumeFast(Message message)
     {
         _statsList[2].ConsumedMessages++;
-        _statsList[2].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+        _statsList[2].ConsumeLastBatchReceived         = (string)message.ApplicationProperties[AP_BATCH];
         _statsList[2].ConsumeCurrentAwaitingCheckpoint = _consumerFast.CheckpointOffsetCounter;
+        await Task.Delay(200);
         return true;
     }
-
 
 
 
@@ -290,7 +299,8 @@ public class SampleCApp
         {
             batch = (string)e.Message.ApplicationProperties[AP_BATCH];
         }
-        else batch = "Not Specified";
+        else
+            batch = "Not Specified";
 
         return batch;
     }
@@ -308,12 +318,7 @@ public class SampleCApp
 
         StreamSystemConfig config = new StreamSystemConfig
         {
-            UserName = "testUser",
-            Password = "TESTUSER",
-            VirtualHost = "Test",
-            Endpoints = new List<EndPoint> {
-                a,b,c
-            },
+            UserName = "testUser", Password = "TESTUSER", VirtualHost = "Test", Endpoints = new List<EndPoint> { a, b, c },
         };
         return config;
     }

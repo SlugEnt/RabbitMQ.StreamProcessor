@@ -12,7 +12,6 @@ namespace StreamProcessor.ConsoleScr
 {
     public class Sample_Z
     {
-
         public async Task Start()
         {
             // The Logger is not mandatory but it is very useful to understand what is going on.
@@ -28,80 +27,81 @@ namespace StreamProcessor.ConsoleScr
             });
 
             // Define the logger for the StreamSystem and the Producer/Consumer
-            var producerLogger = factory.CreateLogger<Producer>(); // <1>
-            var consumerLogger = factory.CreateLogger<Consumer>(); // <2>
-            var streamLogger = factory.CreateLogger<StreamSystem>(); // <3>
+            var producerLogger = factory.CreateLogger<Producer>();     // <1>
+            var consumerLogger = factory.CreateLogger<Consumer>();     // <2>
+            var streamLogger   = factory.CreateLogger<StreamSystem>(); // <3>
+
             // end::sample-logging[]
 
             // Create the StreamSystem
             // tag::sample-system[]
             StreamSystemConfig config = GetStreamSystemConfig();
 
-                var streamSystem = await StreamSystem.Create(config, streamLogger // <3>
-            ).ConfigureAwait(false);
+            var streamSystem = await StreamSystem.Create(config, streamLogger // <3>
+                                                        ).ConfigureAwait(false);
 
             // Create a stream
 
             const string StreamName = "Sample.Z";
             await streamSystem.CreateStream(
-                new StreamSpec(StreamName) // <4>
-                {
-                    MaxSegmentSizeBytes = 20_000_000 // <5>
-                }).ConfigureAwait(false);
+                                            new StreamSpec(StreamName) // <4>
+                                            {
+                                                MaxSegmentSizeBytes = 20_000_000 // <5>
+                                            }).ConfigureAwait(false);
+
             // end::sample-system[]
 
             // Create a producer
             // tag::sample-producer[]
-            var confirmationTaskCompletionSource = new TaskCompletionSource<int>();
-            var confirmationCount = 0;
-            const int MessageCount = 100;
+            var       confirmationTaskCompletionSource = new TaskCompletionSource<int>();
+            var       confirmationCount                = 0;
+            const int MessageCount                     = 100;
             var producer = await Producer.Create( // <1>
-                    new ProducerConfig(streamSystem, StreamName)
-                    {
-                        ConfirmationHandler = async confirmation => // <2>
-                        {
-                            Interlocked.Increment(ref confirmationCount);
+                                                 new ProducerConfig(streamSystem, StreamName)
+                                                 {
+                                                     ConfirmationHandler = async confirmation => // <2>
+                                                     {
+                                                         Interlocked.Increment(ref confirmationCount);
 
-                            // here you can handle the confirmation
-                            switch (confirmation.Status)
-                            {
-                                case ConfirmationStatus.Confirmed: // <3>
-                                    // all the messages received here are confirmed
-                                    if (confirmationCount == MessageCount)
-                                    {
-                                        System.Console.WriteLine("*********************************");
-                                        System.Console.WriteLine($"All the {MessageCount} messages are confirmed");
-                                        System.Console.WriteLine("*********************************");
-                                    }
+                                                         // here you can handle the confirmation
+                                                         switch (confirmation.Status)
+                                                         {
+                                                             case ConfirmationStatus.Confirmed: // <3>
+                                                                 // all the messages received here are confirmed
+                                                                 if (confirmationCount == MessageCount)
+                                                                 {
+                                                                     System.Console.WriteLine("*********************************");
+                                                                     System.Console.WriteLine($"All the {MessageCount} messages are confirmed");
+                                                                     System.Console.WriteLine("*********************************");
+                                                                 }
 
-                                    break;
+                                                                 break;
 
-                                case ConfirmationStatus.StreamNotAvailable:
-                                case ConfirmationStatus.InternalError:
-                                case ConfirmationStatus.AccessRefused:
-                                case ConfirmationStatus.PreconditionFailed:
-                                case ConfirmationStatus.PublisherDoesNotExist:
-                                case ConfirmationStatus.UndefinedError:
-                                case ConfirmationStatus.ClientTimeoutError:
-                                    // <4>
-                                    System.Console.WriteLine(
-                                        $"Message {confirmation.PublishingId} failed with {confirmation.Status}");
-                                    break;
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
+                                                             case ConfirmationStatus.StreamNotAvailable:
+                                                             case ConfirmationStatus.InternalError:
+                                                             case ConfirmationStatus.AccessRefused:
+                                                             case ConfirmationStatus.PreconditionFailed:
+                                                             case ConfirmationStatus.PublisherDoesNotExist:
+                                                             case ConfirmationStatus.UndefinedError:
+                                                             case ConfirmationStatus.ClientTimeoutError:
+                                                                 // <4>
+                                                                 System.Console.WriteLine(
+                                                                                          $"Message {confirmation.PublishingId} failed with {confirmation.Status}");
+                                                                 break;
+                                                             default: throw new ArgumentOutOfRangeException();
+                                                         }
 
-                            if (confirmationCount == MessageCount)
-                            {
-                                confirmationTaskCompletionSource.SetResult(MessageCount);
-                            }
+                                                         if (confirmationCount == MessageCount)
+                                                         {
+                                                             confirmationTaskCompletionSource.SetResult(MessageCount);
+                                                         }
 
-                            await Task.CompletedTask.ConfigureAwait(false);
-                        }
-                    },
-                    producerLogger // <5>
-                )
-                .ConfigureAwait(false);
+                                                         await Task.CompletedTask.ConfigureAwait(false);
+                                                     }
+                                                 },
+                                                 producerLogger // <5>
+                                                )
+                                         .ConfigureAwait(false);
 
 
             // Send 100 messages
@@ -109,57 +109,61 @@ namespace StreamProcessor.ConsoleScr
             for (var i = 0; i < MessageCount; i++)
             {
                 await producer.Send( // <6>
-                    new Message(Encoding.ASCII.GetBytes($"{i}"))
-                ).ConfigureAwait(false);
+                                    new Message(Encoding.ASCII.GetBytes($"{i}"))
+                                   ).ConfigureAwait(false);
             }
 
 
             confirmationTaskCompletionSource.Task.Wait(); // <7>
             await producer.Close().ConfigureAwait(false); // <8>
+
             // end::sample-producer[]
 
             var consumerTaskCompletionSource = new TaskCompletionSource<int>();
-            var consumerCount = 0;
+            var consumerCount                = 0;
+
             // Create a consumer
             // tag::sample-consumer[]
             System.Console.WriteLine("Starting consuming...");
             var consumer = await Consumer.Create( // <1>
-                    new ConsumerConfig(streamSystem, StreamName)
-                    {
-                        OffsetSpec = new OffsetTypeFirst(), // <2>
-                        MessageHandler = async (sourceStream, consumer, messageContext, message) => // <3>
-                        {
-                            System.Console.WriteLine($"Message: {consumerCount}");
+                                                 new ConsumerConfig(streamSystem, StreamName)
+                                                 {
+                                                     OffsetSpec = new OffsetTypeFirst(),                                         // <2>
+                                                     MessageHandler = async (sourceStream, consumer, messageContext, message) => // <3>
+                                                     {
+                                                         string val = Encoding.ASCII.GetString(message.Data.Contents);
+                                                         System.Console.WriteLine($"Message: {consumerCount}  |  " + val);
 
-                            if (Interlocked.Increment(ref consumerCount) == MessageCount)
-                            {
-                                System.Console.WriteLine("*********************************");
-                                System.Console.WriteLine($"All the {MessageCount} messages are received");
-                                System.Console.WriteLine("*********************************");
-                                consumerTaskCompletionSource.SetResult(MessageCount);
-                            }
+                                                         if (Interlocked.Increment(ref consumerCount) == MessageCount)
+                                                         {
+                                                             System.Console.WriteLine("*********************************");
+                                                             System.Console.WriteLine($"All the {MessageCount} messages are received");
+                                                             System.Console.WriteLine("*********************************");
+                                                             consumerTaskCompletionSource.SetResult(MessageCount);
+                                                         }
 
-                            if (consumerCount == 10)
-                                await consumer.Close().ConfigureAwait(false);
-                            await Task.CompletedTask.ConfigureAwait(false);
-                        }
-                    },
-                    consumerLogger // <4>
-                )
-                .ConfigureAwait(false);
-            consumerTaskCompletionSource.Task.Wait(); // <5>
+                                                         if (consumerCount == 10)
+                                                             await consumer.Close().ConfigureAwait(false);
+                                                         await Task.CompletedTask.ConfigureAwait(false);
+                                                     }
+                                                 },
+                                                 consumerLogger // <4>
+                                                )
+                                         .ConfigureAwait(false);
+            consumerTaskCompletionSource.Task.Wait();     // <5>
             await consumer.Close().ConfigureAwait(false); // <6>
+
             // end::sample-consumer[]
 
             System.Console.WriteLine("Press any key to exit");
             System.Console.ReadKey();
+
             //tag::sample-close[]
             await streamSystem.DeleteStream(StreamName).ConfigureAwait(false); // <1>
-            await streamSystem.Close().ConfigureAwait(false); // <2>
+            await streamSystem.Close().ConfigureAwait(false);                  // <2>
+
             //end::sample-close[]
         }
-
-
 
 
 
@@ -175,13 +179,7 @@ namespace StreamProcessor.ConsoleScr
 
             StreamSystemConfig config = new StreamSystemConfig
             {
-                UserName = "testUser",
-                Password = "TESTUSER",
-                VirtualHost = "Test",
-                Endpoints = new List<EndPoint>
-                {
-                    a, b, c
-                },
+                UserName = "testUser", Password = "TESTUSER", VirtualHost = "Test", Endpoints = new List<EndPoint> { a, b, c },
             };
             return config;
         }

@@ -20,12 +20,13 @@ namespace StreamProcessor.ConsoleScr
 {
     internal class MainMenu
     {
-        private readonly ILogger _logger;
-        private IServiceProvider _serviceProvider;
+        private readonly ILogger          _logger;
+        private          IServiceProvider _serviceProvider;
+
 
         public MainMenu(ILogger<MainMenu> logger, IServiceProvider serviceProvider)
         {
-            _logger = logger;
+            _logger          = logger;
             _serviceProvider = serviceProvider;
         }
 
@@ -33,12 +34,9 @@ namespace StreamProcessor.ConsoleScr
 
         public async Task Display()
         {
-
             try
             {
                 System.Console.WriteLine("MQ Stream Sender");
-
-
 
 
                 // See if a configuration file exists.  If so read from it, otherwise start a new config
@@ -66,10 +64,10 @@ namespace StreamProcessor.ConsoleScr
                 ConsoleKeyInfo key = System.Console.ReadKey();
 
 
-                string streamName = "";
-                IMqStreamProducer producer = null;
-                IMqStreamConsumer consumer = null;
-                bool deleteStream = false;
+                string            streamName   = "";
+                IMqStreamProducer producer     = null;
+                IMqStreamConsumer consumer     = null;
+                bool              deleteStream = false;
 
 
                 switch (key.Key)
@@ -102,24 +100,23 @@ namespace StreamProcessor.ConsoleScr
                             {
                                 System.Console.WriteLine($"{batch}");
                                 batch = HelperFunctions.NextBatch(batch);
-
                             }
                         }
 
                         break;
-
                 }
 
                 Thread.Sleep(2000);
                 System.Console.WriteLine("Press any key to exit the application.  Press D to delete the stream");
                 ConsoleKeyInfo key2 = System.Console.ReadKey();
 
-                if ((key2.Key == ConsoleKey.D) && (deleteStream)) consumer.DeleteStreamFromRabbitMQ();
+                if ((key2.Key == ConsoleKey.D) && (deleteStream))
+                    consumer.DeleteStreamFromRabbitMQ();
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Error - {ex.Message}"); 
-                _logger.LogError(ex,"Error encountered: ");
+                System.Console.WriteLine($"Error - {ex.Message}");
+                _logger.LogError(ex, "Error encountered: ");
             }
 
             /*
@@ -133,13 +130,11 @@ namespace StreamProcessor.ConsoleScr
         static async Task<bool> ConsumeMessageHandler(Message message)
         {
             //_counter++;
-            int _counter = 0;
-            string x = Encoding.Default.GetString(message.Data.Contents.ToArray());
+            int    _counter = 0;
+            string x        = Encoding.Default.GetString(message.Data.Contents.ToArray());
             System.Console.WriteLine("Consumed Msg:  # {0} --> {1}", _counter, x);
             await Task.CompletedTask;
             return true;
         }
-
     }
 }
-
