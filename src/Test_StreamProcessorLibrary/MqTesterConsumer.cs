@@ -7,7 +7,6 @@ using RabbitMQ.Stream.Client;
 
 namespace Test_StreamProcessorLibrary;
 
-
 /// <summary>
 /// This class is derived from the MqStreamConsumer.  It is used to enable the unit testing of some of the RabbitMQ functionality.
 /// For instance, SendingMessages actually just sends to a queue.
@@ -16,9 +15,9 @@ namespace Test_StreamProcessorLibrary;
 public class MqTesterConsumer : MqStreamConsumer
 {
     // Simulating MQ
-    private Queue<Message> _messagesToConsume = new Queue<Message>();
-    private ulong _msgOffsetID = 0;
-    private ulong _rabbitMQ_StoredOffset = 0;
+    private Queue<Message> _messagesToConsume     = new Queue<Message>();
+    private ulong          _msgOffsetID           = 0;
+    private ulong          _rabbitMQ_StoredOffset = 0;
 
 
     /// <summary>
@@ -26,16 +25,17 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name="streamName"></param>
     /// <param name="appName"></param>
-    public MqTesterConsumer(ILogger<MqTesterConsumer> logger, ServiceProvider serviceProvider) : base(logger,serviceProvider)
+    public MqTesterConsumer(ILogger<MqTesterConsumer> logger, ServiceProvider serviceProvider) : base(logger, serviceProvider)
     {
         // Automatically assume we are connected.
         IsConnected = true;
         SetConsumptionHandler(ConsumptionHandler);
     }
 
+
     public ulong SetStartingOffset
     {
-        get { return _msgOffsetID;}
+        get { return _msgOffsetID; }
         set { _msgOffsetID = value; }
     }
 
@@ -45,10 +45,7 @@ public class MqTesterConsumer : MqStreamConsumer
         get { return _messagesToConsume; }
     }
 
-    public Queue<Message> ProducerMessageQueue
-    {
-        get; set;
-    }
+    public Queue<Message> ProducerMessageQueue { get; set; }
 
 
     /// <summary>
@@ -56,10 +53,7 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name="offset"></param>
     /// <returns></returns>
-    protected override async Task RabbitMQ_StoreOffsetAsync(ulong offset)
-    {
-        _rabbitMQ_StoredOffset = offset;
-    }
+    protected override async Task RabbitMQ_StoreOffsetAsync(ulong offset) { _rabbitMQ_StoredOffset = offset; }
 
 
     /// <summary>
@@ -73,6 +67,7 @@ public class MqTesterConsumer : MqStreamConsumer
     }
 
 
+
     /// <summary>
     /// 
     /// </summary>
@@ -82,12 +77,11 @@ public class MqTesterConsumer : MqStreamConsumer
         while (ProducerMessageQueue.Count > 0)
         {
             _messagesToConsume.Enqueue(ProducerMessageQueue.Dequeue());
-            
         }
 
         foreach (Message message in _messagesToConsume)
         {
-            MessageContext msgContext = new(++_msgOffsetID,TimeSpan.FromMilliseconds(-1));
+            MessageContext msgContext = new(++_msgOffsetID, TimeSpan.FromMilliseconds(-1));
             await ProcessMessageAsync(msgContext, message);
         }
     }
@@ -99,8 +93,5 @@ public class MqTesterConsumer : MqStreamConsumer
     /// </summary>
     /// <param name=""></param>
     /// <returns></returns>
-    private async Task<bool> ConsumptionHandler(Message message)
-    {
-        return true;
-    }
+    private async Task<bool> ConsumptionHandler(Message message) { return true; }
 }

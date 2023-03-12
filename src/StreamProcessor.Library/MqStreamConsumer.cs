@@ -49,9 +49,12 @@ public class MqStreamConsumer : MQStreamBase, IMqStreamConsumer
     public override async Task StopAsync()
     {
         // Must call Dispose.  The Client Library will re-open the closed connection and continue sending messages.
-        //await CloseStreamAsync();
-        _rawConsumer.Close();
-        _rawConsumer.Dispose();
+        if (_rawConsumer != null)
+        {
+            _rawConsumer.Close();
+            _rawConsumer.Dispose();
+        }
+
         IsConnected = false;
     }
 

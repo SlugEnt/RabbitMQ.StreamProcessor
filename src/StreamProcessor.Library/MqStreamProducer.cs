@@ -205,7 +205,7 @@ public class MqStreamProducer : MQStreamBase, IMqStreamProducer
     ///     Builds the producer.  When this call is complete the caller can begin sending messages
     /// </summary>
     /// <returns></returns>
-    public async Task StartAsync()
+    public virtual async Task StartAsync()
     {
         _producer = await Producer.Create(
                                           new ProducerConfig(_streamSystem, _mqStreamName)

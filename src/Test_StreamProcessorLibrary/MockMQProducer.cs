@@ -7,38 +7,30 @@ namespace Test_StreamProcessorLibrary;
 
 public class MockMQProducer : MqStreamProducer, IMqStreamProducer
 {
-    private bool _streamExists = true;
+    private bool           _streamExists     = true;
     private Queue<Message> _messagesProduced = new Queue<Message>();
 
 
-    public MockMQProducer(ILogger<MqStreamProducer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
-    {
+    public MockMQProducer(ILogger<MqStreamProducer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) { }
 
-    }
+    public override async Task ConnectAsync() { IsConnected = true; }
 
-    public override async Task ConnectAsync()
-    {
-        IsConnected = true;
-    }
+
+    public override async Task StartAsync() { }
+
 
     /// <summary>
     /// Sets the IsConnected Flag.  By default IsConnected is true for this test object
     /// </summary>
     /// <param name="isConnected"></param>
-    public void TST_SetIsConnected(bool isConnected)
-    {
-        IsConnected = isConnected;
-    }
+    public void TST_SetIsConnected(bool isConnected) { IsConnected = isConnected; }
 
 
     /// <summary>
     /// Sets the value of the StreamExists.
     /// </summary>
     /// <param name="streamExists"></param>
-    public void TST_SetStreamExists(bool streamExists)
-    {
-        _streamExists = streamExists;
-    }
+    public void TST_SetStreamExists(bool streamExists) { _streamExists = streamExists; }
 
 
 
@@ -47,10 +39,7 @@ public class MockMQProducer : MqStreamProducer, IMqStreamProducer
     /// </summary>
     /// <param name="streamName"></param>
     /// <returns></returns>
-    protected override async Task<bool> RabbitMQ_StreamExists(string streamName)
-    {
-        return _streamExists;
-    }
+    protected override async Task<bool> RabbitMQ_StreamExists(string streamName) { return _streamExists; }
 
 
     /// <summary>
@@ -61,30 +50,21 @@ public class MockMQProducer : MqStreamProducer, IMqStreamProducer
         get { return _messagesProduced; }
     }
 
+
     /// <summary>
     /// Turns the auto retry process thread on
     /// </summary>
-
-    public void TST_TurnAutoRetryProcessOn()
-    {
-        TurnAutoRetryThreadOn();
-    }
+    public void TST_TurnAutoRetryProcessOn() { TurnAutoRetryThreadOn(); }
 
 
     /// <summary>
     /// Allows caller to manually trip the circuit breaker
     /// </summary>
-    public void TST_ManuallyTripCircuitBreaker()
-    {
-        CircuitBreakerTripped = true;
-    }
+    public void TST_ManuallyTripCircuitBreaker() { CircuitBreakerTripped = true; }
 
 
     // Create an ovverride for the SendMessageToMQAsync so we do not need a running MQ instance.
-    protected override async Task SendMessageToMQAsync(Message message)
-    {
-        _messagesProduced.Enqueue(message);
-    }
+    protected override async Task SendMessageToMQAsync(Message message) { _messagesProduced.Enqueue(message); }
 
 
     /// <summary>
@@ -96,8 +76,8 @@ public class MockMQProducer : MqStreamProducer, IMqStreamProducer
     {
         List<Message> messages = new List<Message>();
 
-        bool continueToDequeu = true;
-        short counter = 0;
+        bool  continueToDequeu = true;
+        short counter          = 0;
         while (continueToDequeu)
         {
             if (_messagesProduced.TryDequeue(out Message message))
@@ -120,5 +100,4 @@ public class MockMQProducer : MqStreamProducer, IMqStreamProducer
         ConfirmationProcessor(statusToBeReturned, messages);
         return counter;
     }
-
 }

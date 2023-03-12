@@ -1,6 +1,10 @@
 ﻿using System.Net;
 using AutoFixture;
 using AutoFixture.AutoMoq;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 
@@ -36,26 +40,22 @@ public static class Helpers
     /// <returns></returns>
     internal static StreamSystemConfig GetStreamConfig()
     {
-        IPAddress address = IPAddress.Loopback;
-        IPEndPoint a = IPEndPoint.Parse("127.0.0.1:5552");
-        
+        IPAddress  address = IPAddress.Loopback;
+        IPEndPoint a       = IPEndPoint.Parse("127.0.0.1:5552");
+
         StreamSystemConfig config = new StreamSystemConfig
         {
-            UserName = "testUser",
-            Password = "TESTUSER",
-            VirtualHost = "Test",
-            Endpoints = new List<EndPoint> {
-                a
-            },
+            UserName = "testUser", Password = "TESTUSER", VirtualHost = "Test", Endpoints = new List<EndPoint> { a },
         };
         return config;
     }
 
 
 
-    internal static (int sent, int confirmed) SendAndConfirmTestMessages(MqTesterProducer producerTst, int quantity, int startingMsgNumber, ConfirmationStatus status)
+    internal static (int sent, int confirmed) SendAndConfirmTestMessages(MqTesterProducer producerTst, int quantity, int startingMsgNumber,
+                                                                         ConfirmationStatus status)
     {
-        int count = SendTestMessages(producerTst, quantity, startingMsgNumber);
+        int count     = SendTestMessages(producerTst, quantity, startingMsgNumber);
         int confirmed = producerTst.TST_ReturnProducerConfirmations(quantity, status);
         return (count, confirmed);
     }
@@ -66,9 +66,14 @@ public static class Helpers
         Fixture fixture = new Fixture();
         fixture.Customize(new AutoMoqCustomization());
 
-        MqTesterProducer producerTst = fixture.Create<MqTesterProducer>();
+
+        ServiceCollection services = new ServiceCollection();
+        services.AddLogging();
+        ServiceProvider  serviceProvider = services.BuildServiceProvider();
+        MqTesterProducer producerTst     = new MqTesterProducer(new NullLogger<MqTesterProducer>(), serviceProvider);
+
         StreamSystemConfig config = GetStreamConfig();
-        producerTst.Initialize(streamName, appName,config);
+        producerTst.Initialize(streamName, appName, config);
         return producerTst;
     }
 
@@ -78,9 +83,13 @@ public static class Helpers
         Fixture fixture = new Fixture();
         fixture.Customize(new AutoMoqCustomization());
 
-        MqTesterConsumer consumerTst = fixture.Build<MqTesterConsumer>().OmitAutoProperties().Create();
+        ServiceCollection services = new ServiceCollection();
+        services.AddLogging();
+        ServiceProvider  serviceProvider = services.BuildServiceProvider();
+        MqTesterConsumer consumerTst     = new MqTesterConsumer(new NullLogger<MqTesterConsumer>(), serviceProvider);
+
         StreamSystemConfig config = GetStreamConfig();
-        consumerTst.Initialize(streamName, appName,config);
+        consumerTst.Initialize(streamName, appName, config);
         return consumerTst;
     }
 }
