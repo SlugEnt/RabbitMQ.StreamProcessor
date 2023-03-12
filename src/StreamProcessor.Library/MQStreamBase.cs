@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
 
-namespace SlugEnt.StreamProcessor;
+namespace SlugEnt.MQStreamProcessor;
 
 /// <summary>
 ///     The base for the MQStreamProducer and MQStreamConsumer classes

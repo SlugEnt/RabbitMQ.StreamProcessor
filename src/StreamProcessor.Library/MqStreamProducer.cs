@@ -7,7 +7,7 @@ using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.AMQP;
 using RabbitMQ.Stream.Client.Reliable;
 
-namespace SlugEnt.StreamProcessor;
+namespace SlugEnt.MQStreamProcessor;
 
 public class MqStreamProducer : MQStreamBase, IMqStreamProducer
 {

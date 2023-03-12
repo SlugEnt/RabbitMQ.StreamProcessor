@@ -7,18 +7,15 @@ using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 
 namespace Test_StreamProcessorLibrary;
-
-
-
 
 [TestFixture]
 public class Test_MQStreamProducer
 {
     bool confirmed_A = false;
-    
+
 
     // Test the Circuit Breaker Tripped Flag
     [Test]
@@ -31,13 +28,12 @@ public class Test_MQStreamProducer
         producerTst.CircuitBreakerStopLimit = limit;
 
 
-        int qtyToSend = messagesToSend;
+        int qtyToSend      = messagesToSend;
         int nextMessageNum = Helpers.SendTestMessages(producerTst, qtyToSend, 1);
-        int count = producerTst.TST_ReturnProducerConfirmations(qtyToSend, ConfirmationStatus.ClientTimeoutError);
+        int count          = producerTst.TST_ReturnProducerConfirmations(qtyToSend, ConfirmationStatus.ClientTimeoutError);
 
         Assert.AreEqual(qtyToSend, count, "A10: Messages received was not the correct amount.");
         Assert.AreEqual(producerTst.CircuitBreakerTripped, circuitBreakerShouldTrip, "A999:  Circuit Breaker test Failed.");
-
     }
 
 
@@ -48,7 +44,7 @@ public class Test_MQStreamProducer
     {
         // We have to turn off Auto-Retries.  The logic will interfere with the Circuitbreaker tests
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 4;
+        producerTst.CircuitBreakerStopLimit      = 4;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Send 3 messages - All Failures
@@ -60,21 +56,21 @@ public class Test_MQStreamProducer
 
 
         // C - Send a good message.  Should reset circuit breaker
-        qtyToSend = 1;
+        qtyToSend               = 1;
         (nextMessageNum, count) = Helpers.SendAndConfirmTestMessages(producerTst, qtyToSend, nextMessageNum, ConfirmationStatus.Confirmed);
         Assert.IsFalse(producerTst.CircuitBreakerTripped, "A100:  Circuit Breaker was tripped. Should not have.");
-        Assert.AreEqual(0,producerTst.ConsecutiveErrors,"A110: Should be zero");
+        Assert.AreEqual(0, producerTst.ConsecutiveErrors, "A110: Should be zero");
 
 
         // D - 3 more failures.  Ensure no circuit breaker failure
-        qtyToSend = 3;
+        qtyToSend               = 3;
         (nextMessageNum, count) = Helpers.SendAndConfirmTestMessages(producerTst, qtyToSend, nextMessageNum, ConfirmationStatus.ClientTimeoutError);
         Assert.IsFalse(producerTst.CircuitBreakerTripped, "A200:  Circuit Breaker was tripped. Should not have.");
         Assert.AreEqual(qtyToSend, producerTst.ConsecutiveErrors, "A210: Should be equal to the quantity of messages sent");
 
 
         // E - Send one more failure - should trip
-        qtyToSend = 1;
+        qtyToSend               = 1;
         (nextMessageNum, count) = Helpers.SendAndConfirmTestMessages(producerTst, qtyToSend, nextMessageNum, ConfirmationStatus.ClientTimeoutError);
         Assert.IsTrue(producerTst.CircuitBreakerTripped, "A300:  Circuit Breaker was not tripped. Should have.");
     }
@@ -88,7 +84,7 @@ public class Test_MQStreamProducer
     {
         // We have to turn off Auto-Retries.  The logic will interfere with the Circuitbreaker tests
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.CircuitBreakerStopLimit      = 3;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Send 5 messages - All Failures
@@ -98,7 +94,7 @@ public class Test_MQStreamProducer
         Assert.AreEqual(qtyToSend, count, "A10: Messages received was not the correct amount.");
         producerTst.TST_ReturnProducerConfirmations(qtyToSend, ConfirmationStatus.ClientTimeoutError);
         Assert.IsTrue(producerTst.CircuitBreakerTripped, "A20:  Circuit Breaker was not tripped. Should have.");
-        Assert.AreEqual(qtyToSend,producerTst.Stat_RetryQueuedMessageCount,"A30:  Retry Queue is not expected value");
+        Assert.AreEqual(qtyToSend, producerTst.Stat_RetryQueuedMessageCount, "A30:  Retry Queue is not expected value");
     }
 
 
@@ -111,9 +107,9 @@ public class Test_MQStreamProducer
 
 
         // B - Send 1 messages - Failure
-        int qtyToSend = 1;
-        bool rc = await producerTst.SendMessageAsync("Success MSG");
-        Assert.IsTrue(rc,"A10:  Successful SendMessageAsync should return true");
+        int  qtyToSend = 1;
+        bool rc        = await producerTst.SendMessageAsync("Success MSG");
+        Assert.IsTrue(rc, "A10:  Successful SendMessageAsync should return true");
     }
 
 
@@ -124,7 +120,7 @@ public class Test_MQStreamProducer
     {
         // We initially turn off Auto-Retries.  We will turn it on after initial set of messages
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 1;
+        producerTst.CircuitBreakerStopLimit      = 1;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Send 1 messages - Failure
@@ -139,7 +135,7 @@ public class Test_MQStreamProducer
 
         // D - Try to send another it should return false.
         bool rc = await producerTst.SendMessageAsync("Failed Message");
-        Assert.IsFalse(rc,"A30: SendMessageAsync should have returned false");
+        Assert.IsFalse(rc, "A30: SendMessageAsync should have returned false");
     }
 
 
@@ -149,7 +145,7 @@ public class Test_MQStreamProducer
     {
         // We initially turn off Auto-Retries.  We will turn it on after initial set of messages
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.CircuitBreakerStopLimit      = 3;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Send 3 messages - All Failures to trip Circuit Breaker
@@ -174,7 +170,7 @@ public class Test_MQStreamProducer
 
         // Send the command to publish the messages (Note, this is only a test capability)
         count = producerTst.TST_ReturnProducerConfirmations(-1, ConfirmationStatus.ClientTimeoutError);
-        
+
         Assert.AreEqual(count, producerTst.Stat_RetryQueuedMessageCount, "C110:  Retry Queue is not expected value");
     }
 
@@ -183,7 +179,7 @@ public class Test_MQStreamProducer
     public void RetrySendsMessagesSuccess()
     {
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.CircuitBreakerStopLimit      = 3;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Send 3 messages - All Failures to trip Circuit Breaker
@@ -207,7 +203,7 @@ public class Test_MQStreamProducer
         count = producerTst.TST_ReturnProducerConfirmations(-1, ConfirmationStatus.Confirmed);
         Thread.Sleep(100);
         Assert.AreEqual(0, producerTst.Stat_RetryQueuedMessageCount, "C110:  Retry Queue is not expected value");
-        Assert.AreEqual(qtyToSend,producerTst.Stat_MessagesSuccessfullyConfirmed,"C120:");
+        Assert.AreEqual(qtyToSend, producerTst.Stat_MessagesSuccessfullyConfirmed, "C120:");
     }
 
 
@@ -215,7 +211,7 @@ public class Test_MQStreamProducer
     public void CircuitBreakerResetsAfterSuccessfulSend()
     {
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.CircuitBreakerStopLimit      = 3;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Send 3 messages - All Failures to trip Circuit Breaker
@@ -242,7 +238,7 @@ public class Test_MQStreamProducer
     public void CheckCircuitBreakerResets()
     {
         MqTesterProducer producerTst = Helpers.SetupProducer();
-        producerTst.CircuitBreakerStopLimit = 3;
+        producerTst.CircuitBreakerStopLimit      = 3;
         producerTst.AutoRetryFailedConfirmations = false;
 
         // B - Manually set CircuitBreaker
@@ -252,12 +248,7 @@ public class Test_MQStreamProducer
 
         // C - Check it, it should reset
         bool result = producerTst.CheckCircuitBreaker();
-        Assert.IsFalse(result,"C100 - Should have returned Circuit Breaker Status");
-        Assert.IsFalse(producerTst.CircuitBreakerTripped,"C110: Circuit Breaker should not be tripped");
+        Assert.IsFalse(result, "C100 - Should have returned Circuit Breaker Status");
+        Assert.IsFalse(producerTst.CircuitBreakerTripped, "C110: Circuit Breaker should not be tripped");
     }
-
-
- 
 }
-
-

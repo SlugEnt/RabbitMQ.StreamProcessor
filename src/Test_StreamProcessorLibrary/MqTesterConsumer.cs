@@ -1,5 +1,5 @@
 ﻿using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

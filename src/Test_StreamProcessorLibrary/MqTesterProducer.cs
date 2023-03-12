@@ -1,11 +1,10 @@
 ﻿using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 using System.Collections.Concurrent;
 using RabbitMQ.Stream.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Test_StreamProcessorLibrary;
-
 
 /// <summary>
 /// This class is derived from the MqStreamProducer.  It is used to enable the unit testing of some of the RabbitMQ functionality.
@@ -16,7 +15,8 @@ public class MqTesterProducer : MqStreamProducer
 {
     // Simulating MQ
     private Queue<Message> _messagesProduced = new Queue<Message>();
-    private bool _streamExists = true;
+    private bool           _streamExists     = true;
+
 
     /// <summary>
     /// Simulates a MQ Stream instance.  Can publish, publish confirm and consume messages.
@@ -26,7 +26,7 @@ public class MqTesterProducer : MqStreamProducer
     public MqTesterProducer(ILogger<MqTesterProducer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
     {
         // Automatically assume we are connected.
-        IsConnected = true;
+        IsConnected   = true;
         _streamExists = true;
     }
 
@@ -35,20 +35,14 @@ public class MqTesterProducer : MqStreamProducer
     /// Sets the IsConnected Flag.  By default IsConnected is true for this test object
     /// </summary>
     /// <param name="isConnected"></param>
-    public void TST_SetIsConnected(bool isConnected)
-    {
-        IsConnected = isConnected;
-    }
+    public void TST_SetIsConnected(bool isConnected) { IsConnected = isConnected; }
 
 
     /// <summary>
     /// Sets the value of the StreamExists.
     /// </summary>
     /// <param name="streamExists"></param>
-    public void TST_SetStreamExists(bool streamExists)
-    {
-        _streamExists = streamExists;
-    }
+    public void TST_SetStreamExists(bool streamExists) { _streamExists = streamExists; }
 
 
     /// <summary>
@@ -56,10 +50,7 @@ public class MqTesterProducer : MqStreamProducer
     /// </summary>
     /// <param name="streamName"></param>
     /// <returns></returns>
-    protected override async Task<bool> RabbitMQ_StreamExists(string streamName)
-    {
-        return _streamExists;
-    }
+    protected override async Task<bool> RabbitMQ_StreamExists(string streamName) { return _streamExists; }
 
 
     /// <summary>
@@ -70,30 +61,21 @@ public class MqTesterProducer : MqStreamProducer
         get { return _messagesProduced; }
     }
 
+
     /// <summary>
     /// Turns the auto retry process thread on
     /// </summary>
-
-    public void TST_TurnAutoRetryProcessOn()
-    {
-        TurnAutoRetryThreadOn();
-    }
+    public void TST_TurnAutoRetryProcessOn() { TurnAutoRetryThreadOn(); }
 
 
     /// <summary>
     /// Allows caller to manually trip the circuit breaker
     /// </summary>
-    public void TST_ManuallyTripCircuitBreaker()
-    {
-        CircuitBreakerTripped = true;
-    }
+    public void TST_ManuallyTripCircuitBreaker() { CircuitBreakerTripped = true; }
 
 
     // Create an ovverride for the SendMessageToMQAsync so we do not need a running MQ instance.
-    protected override async Task SendMessageToMQAsync(Message message)
-    {
-        _messagesProduced.Enqueue(message);
-    }
+    protected override async Task SendMessageToMQAsync(Message message) { _messagesProduced.Enqueue(message); }
 
 
     /// <summary>
@@ -105,8 +87,8 @@ public class MqTesterProducer : MqStreamProducer
     {
         List<Message> messages = new List<Message>();
 
-        bool continueToDequeu = true;
-        short counter = 0;
+        bool  continueToDequeu = true;
+        short counter          = 0;
         while (continueToDequeu)
         {
             if (_messagesProduced.TryDequeue(out Message message))
@@ -129,5 +111,4 @@ public class MqTesterProducer : MqStreamProducer
         ConfirmationProcessor(statusToBeReturned, messages);
         return counter;
     }
-
 }

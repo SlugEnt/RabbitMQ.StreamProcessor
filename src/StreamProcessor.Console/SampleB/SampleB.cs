@@ -4,7 +4,7 @@ using System.Drawing;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client.AMQP;
 using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 using StreamProcessor.Console;
 using StreamProcessor.Console.SampleB;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,72 +22,72 @@ public class SampleBApp
     // Just the key that is added to all messages 
     private const string AP_BATCH = "Batch";
 
-    private string _streamName = "Sample.B";
+    private string            _streamName = "Sample.B";
     private ISampleB_Producer _producerB;
 
     // Consumer - Slow
     private ISampleB_Consumer _consumerB_slow;
-    private string _consumerB_slow_name = "ConBSlow";
+    private string            _consumerB_slow_name = "ConBSlow";
 
     private ISampleB_Consumer _consumerB_Fast;
-    private string _consumerB_fast_name = "ConBFast";
-    
-    
+    private string            _consumerB_fast_name = "ConBFast";
+
+
     private string _batch;
-    
-    private short statsListSize = 10;
+
+    private short       statsListSize = 10;
     private List<Stats> _statsList;
 
     private ILogger<SampleBApp> _logger;
-    private IServiceProvider _serviceProvider;
+    private IServiceProvider    _serviceProvider;
 
 
     public SampleBApp(ILogger<SampleBApp> logger, IServiceProvider serviceProvider)
     {
-        _logger = logger;
+        _logger          = logger;
         _serviceProvider = serviceProvider;
 
 
         // TODO - Move this to Appsettings
         StreamSystemConfig config = GetStreamSystemConfig();
-        
+
 
         // Build a producer
         _producerB = _serviceProvider.GetService<ISampleB_Producer>();
-        _producerB.Initialize(_streamName,"producerB",config);
+        _producerB.Initialize(_streamName, "producerB", config);
         _producerB.SetProducerMethod(ProduceMessages);
-        
+
         //new SampleB_Producer(_streamName, "Sample.B.Producer", ProduceMessages);
         _producerB.SetStreamLimits(ByteSize.FromKibiBytes(10), ByteSize.FromKibiBytes(1), TimeSpan.FromMinutes(15));
-        
-        _producerB.MessageConfirmationError += MessageConfirmationError;
+
+        _producerB.MessageConfirmationError   += MessageConfirmationError;
         _producerB.MessageConfirmationSuccess += MessageConfirmationSuccess;
 
         _consumerB_slow = _serviceProvider.GetService<ISampleB_Consumer>();
-        _consumerB_slow.Initialize(_streamName, _consumerB_slow_name,config);
+        _consumerB_slow.Initialize(_streamName, _consumerB_slow_name, config);
         _consumerB_slow.SetConsumptionHandler(ConsumeSlow);
         _consumerB_slow.EventCheckPointSaved += OnEventCheckPointSavedSlow;
 
         _consumerB_Fast = _serviceProvider.GetService<ISampleB_Consumer>();
-        _consumerB_Fast.Initialize(_streamName, _consumerB_fast_name,config);
+        _consumerB_Fast.Initialize(_streamName, _consumerB_fast_name, config);
         _consumerB_Fast.SetConsumptionHandler(ConsumeFast);
         _consumerB_Fast.EventCheckPointSaved += OnEventCheckPointSavedFast;
 
 
         BuildStatsObjects();
-        
+
 
         DisplayStats = new DisplayStats(_statsList);
-        
+
         //DisplayStats.Refresh();
     }
 
 
-    
+
     private void BuildStatsObjects()
     {
         _statsList = new List<Stats>();
-        Stats producerStats = new Stats("Producer");
+        Stats producerStats  = new Stats("Producer");
         Stats consumerStatsA = new Stats("Cons Slow");
         Stats consumerStatsB = new Stats("Cons Fast");
         Stats consumerStatsC = new Stats("ConsC");
@@ -142,10 +142,12 @@ public class SampleBApp
                 UpdateStats();
                 DisplayStats.Refresh();
                 Thread.Sleep(1000);
-
             }
         }
-        catch (Exception ex) { System.Console.WriteLine("Exception {0}", ex.Message); }
+        catch (Exception ex)
+        {
+            System.Console.WriteLine("Exception {0}", ex.Message);
+        }
 
         System.Console.WriteLine($"Stream B has completed all processing.");
     }
@@ -153,10 +155,9 @@ public class SampleBApp
 
     private void UpdateStats()
     {
-        _statsList[0].SuccessMessages = _producerB.Stat_MessagesSuccessfullyConfirmed;
-        _statsList[0].FailureMessages = _producerB.Stat_MessagesErrored;
+        _statsList[0].SuccessMessages       = _producerB.Stat_MessagesSuccessfullyConfirmed;
+        _statsList[0].FailureMessages       = _producerB.Stat_MessagesErrored;
         _statsList[0].CircuitBreakerTripped = _producerB.CircuitBreakerTripped;
-        
     }
 
 
@@ -176,9 +177,9 @@ public class SampleBApp
                 // Publish the messages
                 for (short i = 0; i < MessagesPerBatch; i++)
                 {
-                    string fullBatchId = _batch + i;
-                    string msg = String.Format($"Id: {i} ");
-                    Message message = producer.CreateMessage(msg);
+                    string  fullBatchId = _batch + i;
+                    string  msg         = String.Format($"Id: {i} ");
+                    Message message     = producer.CreateMessage(msg);
 
                     string fullBatch = _batch.ToString() + i.ToString();
                     message.ApplicationProperties.Add(AP_BATCH, fullBatch);
@@ -193,16 +194,22 @@ public class SampleBApp
                         bool keepTrying = true;
                         while (keepTrying)
                         {
-                            if (producer.IsCancelled) return;
-                            if (producer.CircuitBreakerTripped) Thread.Sleep(2000);
-                            else await producer.SendMessageAsync(message);
+                            if (producer.IsCancelled)
+                                return;
+
+                            if (producer.CircuitBreakerTripped)
+                                Thread.Sleep(2000);
+                            else
+                                await producer.SendMessageAsync(message);
                         }
                     }
 
-                    if (producer.IsCancelled) return;
+                    if (producer.IsCancelled)
+                        return;
                 }
 
                 _batch = HelperFunctions.NextBatch(_batch);
+
                 //DisplayStats.Refresh();
                 Thread.Sleep(IntervalInSecondsBetweenBatches * 1000);
             }
@@ -214,10 +221,13 @@ public class SampleBApp
     private void MessageConfirmationError(object sender, MessageConfirmationEventArgs e)
     {
         _statsList[0].FailureMessages++;
-        bool success = e.Status == ConfirmationStatus.Confirmed ? true : false;
-        ConfirmationMessage cm = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
+        bool                success = e.Status == ConfirmationStatus.Confirmed ? true : false;
+        ConfirmationMessage cm      = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
         _statsList[0].ProducedMessages.Add(cm);
-        if (_statsList[0].ProducedMessages.Count > statsListSize) { _statsList[0].ProducedMessages.RemoveAt(0); }
+        if (_statsList[0].ProducedMessages.Count > statsListSize)
+        {
+            _statsList[0].ProducedMessages.RemoveAt(0);
+        }
 
         string batch = GetBatch(e);
 
@@ -227,27 +237,25 @@ public class SampleBApp
 
     private void MessageConfirmationSuccess(object sender, MessageConfirmationEventArgs e)
     {
-        string batch = GetBatch(e);
-        bool success = e.Status == ConfirmationStatus.Confirmed ? true : false;
-        ConfirmationMessage cm = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
+        string              batch   = GetBatch(e);
+        bool                success = e.Status == ConfirmationStatus.Confirmed ? true : false;
+        ConfirmationMessage cm      = new ConfirmationMessage(e.Message, success, (string)e.Message.ApplicationProperties[AP_BATCH]);
         _statsList[0].ProducedMessages.Add(cm);
-        if (_statsList[0].ProducedMessages.Count > statsListSize) { _statsList[0].ProducedMessages.RemoveAt(0);}
+        if (_statsList[0].ProducedMessages.Count > statsListSize)
+        {
+            _statsList[0].ProducedMessages.RemoveAt(0);
+        }
 
         _statsList[0].SuccessMessages++;
+
         //HelperFunctions.WriteInColor($"Success:  MSg Batch:  {batch}", ConsoleColor.Green);
     }
 
 
-    private void OnEventCheckPointSavedSlow(object sender, MqStreamCheckPointEventArgs e)
-    {
-        _statsList[1].ConsumeLastCheckpoint = e.CommittedOffset;
-    }
+    private void OnEventCheckPointSavedSlow(object sender, MqStreamCheckPointEventArgs e) { _statsList[1].ConsumeLastCheckpoint = e.CommittedOffset; }
 
 
-    private void OnEventCheckPointSavedFast(object sender, MqStreamCheckPointEventArgs e)
-    {
-        _statsList[2].ConsumeLastCheckpoint = e.CommittedOffset;
-    }
+    private void OnEventCheckPointSavedFast(object sender, MqStreamCheckPointEventArgs e) { _statsList[2].ConsumeLastCheckpoint = e.CommittedOffset; }
 
 
     /// <summary>
@@ -259,8 +267,10 @@ public class SampleBApp
     {
         _statsList[1].ConsumedMessages++;
         _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+
 //        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.CheckpointLastOffset;
         _statsList[1].ConsumeCurrentAwaitingCheckpoint = _consumerB_slow.CheckpointOffsetCounter;
+
         // Simulate slow
         Thread.Sleep(1500);
         return true;
@@ -275,11 +285,10 @@ public class SampleBApp
     private async Task<bool> ConsumeFast(Message message)
     {
         _statsList[2].ConsumedMessages++;
-        _statsList[2].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+        _statsList[2].ConsumeLastBatchReceived         = (string)message.ApplicationProperties[AP_BATCH];
         _statsList[2].ConsumeCurrentAwaitingCheckpoint = _consumerB_Fast.CheckpointOffsetCounter;
         return true;
     }
-
 
 
 
@@ -290,7 +299,8 @@ public class SampleBApp
         {
             batch = (string)e.Message.ApplicationProperties[AP_BATCH];
         }
-        else batch = "Not Specified";
+        else
+            batch = "Not Specified";
 
         return batch;
     }
@@ -302,18 +312,13 @@ public class SampleBApp
     /// <returns></returns>
     private StreamSystemConfig GetStreamSystemConfig()
     {
-        IPEndPoint a = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
-        IPEndPoint b = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
-        IPEndPoint c = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqc.slug.local", 5552);
+        IPEndPoint a = SlugEnt.MQStreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
+        IPEndPoint b = SlugEnt.MQStreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
+        IPEndPoint c = SlugEnt.MQStreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqc.slug.local", 5552);
 
         StreamSystemConfig config = new StreamSystemConfig
         {
-            UserName = "testUser",
-            Password = "TESTUSER",
-            VirtualHost = "Test",
-            Endpoints = new List<EndPoint> {
-                a,b,c
-            },
+            UserName = "testUser", Password = "TESTUSER", VirtualHost = "Test", Endpoints = new List<EndPoint> { a, b, c },
         };
         return config;
     }

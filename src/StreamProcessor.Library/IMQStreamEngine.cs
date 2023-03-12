@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using RabbitMQ.Stream.Client;
 
-namespace SlugEnt.StreamProcessor;
+namespace SlugEnt.MQStreamProcessor;
 
 public interface IMQStreamEngine
 {
@@ -17,6 +17,7 @@ public interface IMQStreamEngine
     /// <returns></returns>
     /// <exception cref="ApplicationException"></exception>
     IMqStreamProducer GetProducer(string streamName, string applicationName);
+
 
     /// <summary>
     /// Sets / Retrieves the Stream System Config
@@ -33,6 +34,7 @@ public interface IMQStreamEngine
     /// </summary>
     Dictionary<string, IMqStreamProducer> StreamProducersDictionary { get; set; }
 
+
     /// <summary>
     /// Returns a new Consumer that will access the given Stream with the application name provided.
     /// </summary>
@@ -43,13 +45,16 @@ public interface IMQStreamEngine
     /// <exception cref="ApplicationException"></exception>
     IMqStreamConsumer GetConsumer(string streamName, string applicationName, Func<Message, Task<bool>> consumptionHandler);
 
+
     Task StartAllConsumersAsync();
+
 
     /// <summary>
     /// Starts the consumer
     /// </summary>
     /// <returns></returns>
     Task StartConsumerAsync(IMqStreamConsumer consumer);
+
 
     /// <summary>
     /// Starts the given producer
@@ -58,11 +63,13 @@ public interface IMQStreamEngine
     /// <returns></returns>
     Task StartProducerAsync(IMqStreamProducer producer);
 
+
     /// <summary>
     /// Stops All consumers and then stops all producers.
     /// </summary>
     /// <returns></returns>
     Task StopAllAsync();
+
 
     /// <summary>
     /// Stops all the consumers.  Waits for all to be stopped before returning.
@@ -70,11 +77,13 @@ public interface IMQStreamEngine
     /// <returns></returns>
     Task StopAllConsumersAsync();
 
+
     /// <summary>
     /// Stops all the producers.  Waits for all to be stopped before returning.
     /// </summary>
     /// <returns></returns>
     Task StopAllProducers();
+
 
     /// <summary>
     /// Starts all the Producers
@@ -82,11 +91,10 @@ public interface IMQStreamEngine
     /// <returns></returns>
     Task StartAllProducersAsync();
 
+
     /// <summary>
     /// Starts all the consumers first and then the producers.
     /// </summary>
     /// <returns></returns>
     Task StartAllStreamsAsync();
 }
-
-

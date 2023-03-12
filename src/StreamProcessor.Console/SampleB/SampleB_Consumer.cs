@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 
 namespace StreamProcessor.ConsoleScr.SampleB
 {
@@ -22,9 +22,11 @@ namespace StreamProcessor.ConsoleScr.SampleB
         //private Func<Message, Task<bool>> _consumptionHandler;
         private ILogger<SampleB_Consumer> _logger;
 
+
         public SampleB_Consumer(ILogger<SampleB_Consumer> logger, ServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
             _logger = logger;
+
             //_consumptionHandler = consumptionHandler;
         }
 
@@ -39,7 +41,7 @@ namespace StreamProcessor.ConsoleScr.SampleB
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,ex.Message);
+                _logger.LogError(ex, ex.Message);
                 System.Console.WriteLine("There was an error - {0}", ex.Message);
             }
         }

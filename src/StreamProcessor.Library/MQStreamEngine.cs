@@ -7,18 +7,17 @@ using System.Threading.Tasks;
 using RabbitMQ.Stream.Client;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace SlugEnt.StreamProcessor
+namespace SlugEnt.MQStreamProcessor
 {
-    
     /// <summary>
     /// Represents a connection to RabbitMQ Stream services.
     /// <para>Support multiple simultaneous producers and consumers.</para>
     /// </summary>
     public class MQStreamEngine : IMQStreamEngine
     {
-        private readonly ILogger _logger;
-        private IServiceProvider _serviceProvider;
-        private ILoggerFactory _loggerFactory;
+        private readonly ILogger          _logger;
+        private          IServiceProvider _serviceProvider;
+        private          ILoggerFactory   _loggerFactory;
 
 
 
@@ -30,8 +29,8 @@ namespace SlugEnt.StreamProcessor
         /// <param name="loggerFactory"></param>
         public MQStreamEngine(ILogger<MQStreamEngine> logger, IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
         {
-            _logger = logger;
-            _loggerFactory = loggerFactory;
+            _logger          = logger;
+            _loggerFactory   = loggerFactory;
             _serviceProvider = serviceProvider;
         }
 
@@ -40,6 +39,7 @@ namespace SlugEnt.StreamProcessor
         /// Sets / Retrieves the Stream System Config
         /// </summary>
         public StreamSystemConfig StreamSystemConfig { get; set; }
+
         // TODO - 
 
 
@@ -70,9 +70,9 @@ namespace SlugEnt.StreamProcessor
             if (StreamSystemConfig == null)
                 throw new ApplicationException("The StreamSystemConfig must be set before calling GetConsumer");
 
-            ILogger<MqStreamConsumer> logConsumer = _loggerFactory.CreateLogger<MqStreamConsumer>();
-            IMqStreamConsumer mqStreamConsumer = _serviceProvider.GetService<IMqStreamConsumer>();
-            mqStreamConsumer.Initialize(streamName,applicationName,StreamSystemConfig);
+            ILogger<MqStreamConsumer> logConsumer      = _loggerFactory.CreateLogger<MqStreamConsumer>();
+            IMqStreamConsumer         mqStreamConsumer = _serviceProvider.GetService<IMqStreamConsumer>();
+            mqStreamConsumer.Initialize(streamName, applicationName, StreamSystemConfig);
             mqStreamConsumer.SetConsumptionHandler(consumptionHandler);
             StreamConsumersDictionary.Add(mqStreamConsumer.FullName, mqStreamConsumer);
             return mqStreamConsumer;
@@ -91,12 +91,13 @@ namespace SlugEnt.StreamProcessor
         {
             if (StreamSystemConfig == null)
                 throw new ApplicationException("The StreamSystemConfig must be set before calling GetProducer");
-            
-            ILogger<MqStreamProducer> logProducer = _loggerFactory.CreateLogger<MqStreamProducer>();
-            IMqStreamProducer mqStreamProducer = _serviceProvider.GetService<IMqStreamProducer>();
+
+            ILogger<MqStreamProducer> logProducer      = _loggerFactory.CreateLogger<MqStreamProducer>();
+            IMqStreamProducer         mqStreamProducer = _serviceProvider.GetService<IMqStreamProducer>();
             if (mqStreamProducer == null)
                 throw new ApplicationException(
-                    "Unable to create a MqStreamProducer object.  Ensure IServiceProvider has this class available");
+                                               "Unable to create a MqStreamProducer object.  Ensure IServiceProvider has this class available");
+
             mqStreamProducer.Initialize(streamName, applicationName, StreamSystemConfig);
             StreamProducersDictionary.Add(mqStreamProducer.FullName, mqStreamProducer);
             return mqStreamProducer;
@@ -118,8 +119,6 @@ namespace SlugEnt.StreamProcessor
                 StreamConsumersDictionary.Remove(consumer.FullName);
                 consumer = null;
             }
-
-
         }
 
 
@@ -132,7 +131,7 @@ namespace SlugEnt.StreamProcessor
         {
             List<Task> startTasks = new List<Task>();
 
-            foreach (KeyValuePair<string,IMqStreamConsumer> kvConsumer in StreamConsumersDictionary)
+            foreach (KeyValuePair<string, IMqStreamConsumer> kvConsumer in StreamConsumersDictionary)
             {
                 startTasks.Add(StartConsumerAsync(kvConsumer.Value));
             }
@@ -216,10 +215,7 @@ namespace SlugEnt.StreamProcessor
         /// Stops All consumers and then stops all producers.
         /// </summary>
         /// <returns></returns>
-        public async Task StopAllAsync ()
-        {
-            await StopAllConsumersAsync();
-        }
+        public async Task StopAllAsync() { await StopAllConsumersAsync(); }
 
 
         /// <summary>
@@ -236,7 +232,6 @@ namespace SlugEnt.StreamProcessor
 
 
 
-
         /// <summary>
         /// Stops all the producers.  Waits for all to be stopped before returning.
         /// </summary>
@@ -248,7 +243,5 @@ namespace SlugEnt.StreamProcessor
                 closeTasks.Add(producer.Value.StopAsync());
             await Task.WhenAll(closeTasks);
         }
-
-
     }
 }

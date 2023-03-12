@@ -1,7 +1,7 @@
 ﻿using ByteSizeLib;
 using RabbitMQ.Stream.Client;
 
-namespace SlugEnt.StreamProcessor;
+namespace SlugEnt.MQStreamProcessor;
 
 /// <summary>
 /// Interface for the MQ Stream Producer class
@@ -59,6 +59,7 @@ public interface IMqStreamProducer : IMQStreamBase
     /// </summary>
     TimeSpan MaxAge { get; set; }
 
+
     /// <summary>
     /// Performs a check to see if the circuit breaker should be reset.  Should not normally be needed
     /// But if for some reason the program gets stuck the caller should check this periodically.
@@ -66,11 +67,13 @@ public interface IMqStreamProducer : IMQStreamBase
     /// <returns></returns>
     bool CheckCircuitBreaker();
 
+
     /// <summary>
     /// Builds the producer.  When this call is complete the caller can begin sending messages
     /// </summary>
     /// <returns></returns>
     Task StartAsync();
+
 
     /// <summary>
     /// This creates a new message with the given message string and returns the Message object. The caller can then Add additiona KV pairs to the
@@ -81,12 +84,14 @@ public interface IMqStreamProducer : IMQStreamBase
     /// <returns></returns>
     Message CreateMessage(string messageAsString);
 
+
     /// <summary>
     /// Sends the given message to the MQ Stream.
     /// </summary>
     /// <param name="message"></param>
     /// <returns></returns>
     Task<bool> SendMessageAsync(Message message);
+
 
     /// <summary>
     /// Sends the given message to the RabbitMQ stream
@@ -95,10 +100,12 @@ public interface IMqStreamProducer : IMQStreamBase
     /// <returns></returns>
     Task<bool> SendMessageAsync(string messageAsString);
 
+
     /// <summary>
     /// Sets no limits for the stream - It will either be controlled by RabbitMQ policies or have no limits - which is unadvisable.
     /// </summary>
     void SetNoStreamLimits();
+
 
     /// <summary>
     /// Sets the stream specifications in its raw RabbitMQ requested units of measure
@@ -119,9 +126,4 @@ public interface IMqStreamProducer : IMQStreamBase
     /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
     /// </summary>
     event EventHandler<MessageConfirmationEventArgs> MessageConfirmationSuccess;
-
-
 }
-
-
-

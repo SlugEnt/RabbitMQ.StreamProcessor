@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 
 namespace Test_StreamProcessorLibrary;
 
@@ -14,7 +14,7 @@ namespace Test_StreamProcessorLibrary;
 public class Test_MQStreamEngine
 {
     private IServiceCollection _services;
-    private ServiceProvider _serviceProvider;
+    private ServiceProvider    _serviceProvider;
 
 
     [OneTimeSetUp]
@@ -36,8 +36,8 @@ public class Test_MQStreamEngine
     private IMQStreamEngine GetTestingStreamEngine()
     {
         // B. Test
-        IMQStreamEngine mqStreamEngine = _serviceProvider.GetService<IMQStreamEngine>();
-        StreamSystemConfig config = new StreamSystemConfig();
+        IMQStreamEngine    mqStreamEngine = _serviceProvider.GetService<IMQStreamEngine>();
+        StreamSystemConfig config         = new StreamSystemConfig();
         mqStreamEngine.StreamSystemConfig = config;
         return mqStreamEngine;
     }
@@ -50,18 +50,18 @@ public class Test_MQStreamEngine
     {
         // A. Setup
         string streamName = "sA";
-        string appName = "A1";
+        string appName    = "A1";
 
         // B. Test
-        IMQStreamEngine mqStreamEngine = _serviceProvider.GetService<IMQStreamEngine>();
-        StreamSystemConfig config = new StreamSystemConfig();
+        IMQStreamEngine    mqStreamEngine = _serviceProvider.GetService<IMQStreamEngine>();
+        StreamSystemConfig config         = new StreamSystemConfig();
         mqStreamEngine.StreamSystemConfig = config;
         IMqStreamConsumer consumer = mqStreamEngine.GetConsumer(streamName, appName, dummyConsumer);
 
         // C. Validate
-        Assert.IsNotNull(consumer,"C200:");
-        Assert.AreEqual(1,mqStreamEngine.StreamConsumersDictionary.Count,"C210:");
-        Assert.IsTrue(mqStreamEngine.StreamConsumersDictionary.ContainsKey(consumer.FullName),"C220:");
+        Assert.IsNotNull(consumer, "C200:");
+        Assert.AreEqual(1, mqStreamEngine.StreamConsumersDictionary.Count, "C210:");
+        Assert.IsTrue(mqStreamEngine.StreamConsumersDictionary.ContainsKey(consumer.FullName), "C220:");
     }
 
 
@@ -73,13 +73,13 @@ public class Test_MQStreamEngine
     {
         // A. Setup
         string streamName = "sA";
-        string appName = "A1";
+        string appName    = "A1";
 
         // B. Test
         IMQStreamEngine mqStreamEngine = _serviceProvider.GetService<IMQStreamEngine>();
 
         // C. Validate
-        Assert.Throws<ApplicationException>(()=> mqStreamEngine.GetConsumer(streamName,appName,dummyConsumer));
+        Assert.Throws<ApplicationException>(() => mqStreamEngine.GetConsumer(streamName, appName, dummyConsumer));
     }
 
 
@@ -92,22 +92,22 @@ public class Test_MQStreamEngine
     {
         // A. Setup
         string streamA = "sA";
-        string appA = "A1";
+        string appA    = "A1";
         string streamB = "sB";
-        string appB = "B1";
+        string appB    = "B1";
         string streamC = "sC";
-        string appC = "C1";
+        string appC    = "C1";
 
 
         // B. Test
-        IMQStreamEngine mqStreamEngine = GetTestingStreamEngine();
-        IMqStreamConsumer consumerA = mqStreamEngine.GetConsumer(streamA, appA, dummyConsumer);
-        IMqStreamConsumer consumerB = mqStreamEngine.GetConsumer(streamB, appB, dummyConsumer);
-        IMqStreamConsumer consumerC = mqStreamEngine.GetConsumer(streamC, appC, dummyConsumer);
+        IMQStreamEngine   mqStreamEngine = GetTestingStreamEngine();
+        IMqStreamConsumer consumerA      = mqStreamEngine.GetConsumer(streamA, appA, dummyConsumer);
+        IMqStreamConsumer consumerB      = mqStreamEngine.GetConsumer(streamB, appB, dummyConsumer);
+        IMqStreamConsumer consumerC      = mqStreamEngine.GetConsumer(streamC, appC, dummyConsumer);
 
 
         // C. PreValidation
-        Assert.IsFalse(consumerA.IsConnected,"C200");
+        Assert.IsFalse(consumerA.IsConnected, "C200");
         Assert.IsFalse(consumerB.IsConnected, "C210");
         Assert.IsFalse(consumerC.IsConnected, "C220");
 
@@ -126,17 +126,17 @@ public class Test_MQStreamEngine
     {
         // A. Setup
         string streamA = "sA";
-        string appA = "A1";
+        string appA    = "A1";
         string streamB = "sB";
-        string appB = "B1";
+        string appB    = "B1";
         string streamC = "sC";
-        string appC = "C1";
+        string appC    = "C1";
 
 
-        IMQStreamEngine mqStreamEngine = GetTestingStreamEngine();
-        IMqStreamConsumer consumerA = mqStreamEngine.GetConsumer(streamA, appA, dummyConsumer);
-        IMqStreamConsumer consumerB = mqStreamEngine.GetConsumer(streamB, appB, dummyConsumer);
-        IMqStreamConsumer consumerC = mqStreamEngine.GetConsumer(streamC, appC, dummyConsumer);
+        IMQStreamEngine   mqStreamEngine = GetTestingStreamEngine();
+        IMqStreamConsumer consumerA      = mqStreamEngine.GetConsumer(streamA, appA, dummyConsumer);
+        IMqStreamConsumer consumerB      = mqStreamEngine.GetConsumer(streamB, appB, dummyConsumer);
+        IMqStreamConsumer consumerC      = mqStreamEngine.GetConsumer(streamC, appC, dummyConsumer);
 
 
         // B. Pre-Validation
@@ -163,7 +163,6 @@ public class Test_MQStreamEngine
 
 
 
-
     /// <summary>
     /// Builds 3 producers and verifies Start All, results in all 3 being started.
     /// </summary>
@@ -173,18 +172,18 @@ public class Test_MQStreamEngine
     {
         // A. Setup
         string streamA = "sA";
-        string appA = "A1";
+        string appA    = "A1";
         string streamB = "sB";
-        string appB = "B1";
+        string appB    = "B1";
         string streamC = "sC";
-        string appC = "C1";
+        string appC    = "C1";
 
 
         // B. Test
-        IMQStreamEngine mqStreamEngine = GetTestingStreamEngine();
-        IMqStreamProducer producerA = mqStreamEngine.GetProducer(streamA, appA);
-        IMqStreamProducer producerB = mqStreamEngine.GetProducer(streamB, appB);
-        IMqStreamProducer producerC = mqStreamEngine.GetProducer(streamC, appC);
+        IMQStreamEngine   mqStreamEngine = GetTestingStreamEngine();
+        IMqStreamProducer producerA      = mqStreamEngine.GetProducer(streamA, appA);
+        IMqStreamProducer producerB      = mqStreamEngine.GetProducer(streamB, appB);
+        IMqStreamProducer producerC      = mqStreamEngine.GetProducer(streamC, appC);
 
 
         // C. PreValidation
@@ -203,15 +202,10 @@ public class Test_MQStreamEngine
 
 
 
-
     /// <summary>
     /// Just a dummy consumer.  Is never used.
     /// </summary>
     /// <param name="message"></param>
     /// <returns></returns>
-    private async Task<bool> dummyConsumer(Message message)
-    {
-        return true;
-    }
+    private async Task<bool> dummyConsumer(Message message) { return true; }
 }
-

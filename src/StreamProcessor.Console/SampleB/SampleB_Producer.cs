@@ -1,4 +1,4 @@
-﻿using SlugEnt.StreamProcessor;
+﻿using SlugEnt.MQStreamProcessor;
 using System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using StreamProcessor.Console.SampleA;
@@ -16,7 +16,7 @@ public interface ISampleB_Producer : IMqStreamProducer
 public class SampleB_Producer : MqStreamProducer, IMqStreamProducer, ISampleB_Producer
 {
     private Func<SampleB_Producer, Task> _produceMessagesMethod;
-    private Thread _workerThread;
+    private Thread                       _workerThread;
 
 
 
@@ -33,10 +33,7 @@ public class SampleB_Producer : MqStreamProducer, IMqStreamProducer, ISampleB_Pr
 
 
 
-    public void SetProducerMethod(Func<SampleB_Producer, Task> method)
-    {
-        _produceMessagesMethod = method;
-    }
+    public void SetProducerMethod(Func<SampleB_Producer, Task> method) { _produceMessagesMethod = method; }
 
 
 
@@ -57,7 +54,7 @@ public class SampleB_Producer : MqStreamProducer, IMqStreamProducer, ISampleB_Pr
     public async Task Stop()
     {
         IsCancelled = true;
-        
+
         // Print Final Totals
         System.Console.WriteLine("Messages:");
         System.Console.WriteLine($"  Produced:    {MessageCounter}");
@@ -65,17 +62,11 @@ public class SampleB_Producer : MqStreamProducer, IMqStreamProducer, ISampleB_Pr
 
 
 
-
-
     /// <summary>
     /// Calls the method to produce messages.  That method does not return until done.
     /// </summary>
     /// <param name="worker"></param>
-    private void ProduceMessages()
-    {
-        _produceMessagesMethod(this);
-    }
-
+    private void ProduceMessages() { _produceMessagesMethod(this); }
 
 
 

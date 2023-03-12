@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SlugEnt.StreamProcessor
+namespace SlugEnt.MQStreamProcessor
 {
     public interface IMQStreamBase
     {
@@ -42,6 +42,7 @@ namespace SlugEnt.StreamProcessor
         /// </summary>
         bool IsConnected { get; }
 
+
         /// <summary>
         /// Establishes a connection to the stream on the RabbitMQ server(s).
         /// </summary>
@@ -72,7 +73,7 @@ namespace SlugEnt.StreamProcessor
         /// <returns></returns>
         Task DeleteStreamFromRabbitMQ();
 
-        Task StreamInfo();
 
+        Task StreamInfo();
     }
 }

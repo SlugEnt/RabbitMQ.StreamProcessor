@@ -7,7 +7,7 @@ using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using Microsoft.Extensions.Logging;
 using Moq.Protected;
 using RabbitMQ.Stream.Client;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 
 namespace Test_StreamProcessorLibrary
 {

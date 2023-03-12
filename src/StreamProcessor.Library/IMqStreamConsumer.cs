@@ -1,7 +1,7 @@
 ﻿using ByteSizeLib;
 using RabbitMQ.Stream.Client;
 
-namespace SlugEnt.StreamProcessor;
+namespace SlugEnt.MQStreamProcessor;
 
 public interface IMqStreamConsumer : IMQStreamBase
 {
@@ -51,6 +51,7 @@ public interface IMqStreamConsumer : IMQStreamBase
     /// </summary>
     TimeSpan MaxAge { get; set; }
 
+
     /// <summary>
     /// Initiate the Consumption cycle
     /// </summary>
@@ -58,11 +59,13 @@ public interface IMqStreamConsumer : IMQStreamBase
     /// <exception cref="ApplicationException"></exception>
     Task ConsumeAsync();
 
+
     /// <summary>
     /// Sets the Method to be called when a message is received.
     /// </summary>
     /// <param name="callHandler"></param>
     void SetConsumptionHandler(Func<Message, Task<bool>> callHandler);
+
 
     /// <summary>
     /// Performs a Offset store operation on the MQ Stream. Sets the offset to the offset of the last received message
@@ -70,10 +73,9 @@ public interface IMqStreamConsumer : IMQStreamBase
     /// <returns></returns>
     Task CheckPointSetAsync();
 
+
     /// <summary>
     /// IF the OnConfirmation method is not handled by the caller, then any confirmation error will raise this event
     /// </summary>
     event EventHandler<MqStreamCheckPointEventArgs> EventCheckPointSaved;
-
-
 }

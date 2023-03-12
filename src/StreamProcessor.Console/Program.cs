@@ -11,7 +11,7 @@ using System.Text;
 using System.Text.Json;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,17 +35,17 @@ public class Program
         Serilog.ILogger Logger;
         Log.Logger = new LoggerConfiguration()
 #if DEBUG
-            .MinimumLevel.Verbose()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                     .MinimumLevel.Verbose()
+                     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
 #else
 						 .MinimumLevel.Information()
 			             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
 #endif
-            
-            .WriteTo.Console()
-            .WriteTo.Debug()
-            .Enrich.FromLogContext()
-            .CreateLogger();
+
+                     .WriteTo.Console()
+                     .WriteTo.Debug()
+                     .Enrich.FromLogContext()
+                     .CreateLogger();
 
         Log.Debug("Starting " + Assembly.GetEntryAssembly().FullName);
 
@@ -54,7 +54,7 @@ public class Program
 
         try
         {
-            var host = CreateHostBuilder(args).Build();
+            var      host     = CreateHostBuilder(args).Build();
             MainMenu mainMenu = host.Services.GetService<MainMenu>();
 
             /*
@@ -80,8 +80,8 @@ public class Program
         catch (Exception ex)
         {
             AnsiConsole.WriteLine("Error");
-
         }
+
         AnsiConsole.WriteLine("Bye");
     }
 
@@ -95,16 +95,15 @@ public class Program
         Host.CreateDefaultBuilder(args)
             .ConfigureServices((_, services) =>
             {
-                services.AddTransient<SampleBApp,SampleBApp>();
+                services.AddTransient<SampleBApp, SampleBApp>();
                 services.AddTransient<MainMenu>();
                 services.AddTransient<IMqStreamConsumer, MqStreamConsumer>();
                 services.AddTransient<IMqStreamProducer, MqStreamProducer>();
-                services.AddTransient<IMQStreamEngine,MQStreamEngine>();
-                services.AddTransient<ISampleB_Consumer,SampleB_Consumer>();
+                services.AddTransient<IMQStreamEngine, MQStreamEngine>();
+                services.AddTransient<ISampleB_Consumer, SampleB_Consumer>();
                 services.AddTransient<ISampleB_Producer, SampleB_Producer>();
                 services.AddTransient<Sample_Z>();
                 services.AddTransient<SampleCApp>();
-
             })
             .ConfigureLogging((_, logging) =>
             {
@@ -112,10 +111,8 @@ public class Program
                 logging.AddSerilog();
                 logging.AddDebug();
                 logging.AddConsole();
+
                 //logging.AddSimpleConsole(options => options.IncludeScopes = true);
                 //logging.AddEventLog();
             });
-
 }
-
-

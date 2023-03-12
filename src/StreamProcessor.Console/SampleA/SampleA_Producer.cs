@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 using StreamProcessor.Console.SampleB;
 using StreamProcessor.ConsoleScr.SampleB;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ namespace StreamProcessor.Console.SampleA;
 public class SampleA_Producer : MqStreamProducer
 {
     //public Func<SampleA_Producer, BackgroundWorker, Task> ProduceMessageMethod;
-    private BackgroundWorker _backgroundWorkerProducer;
+    private BackgroundWorker                               _backgroundWorkerProducer;
     private Func<SampleA_Producer, BackgroundWorker, Task> _produceMessagesMethod;
 
 
@@ -20,16 +20,10 @@ public class SampleA_Producer : MqStreamProducer
     /// <param name="mqStreamName"></param>
     /// <param name="appName"></param>
     /// <param name="produceMessagesMethod">Method that should be called to produce messages</param>
-    public SampleA_Producer(ILogger<SampleA_Producer> logger, IServiceProvider serviceProvider) : base(logger,serviceProvider) 
-    {
-    }
+    public SampleA_Producer(ILogger<SampleA_Producer> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) { }
 
 
-    public void SetProducerMethod(Func<SampleA_Producer, BackgroundWorker, Task> method)
-    {
-        _produceMessagesMethod = method;
-    }
-
+    public void SetProducerMethod(Func<SampleA_Producer, BackgroundWorker, Task> method) { _produceMessagesMethod = method; }
 
 
 
@@ -43,11 +37,11 @@ public class SampleA_Producer : MqStreamProducer
         await StartAsync();
 
         // Setup the background worker that produces messages
-        _backgroundWorkerProducer = new BackgroundWorker();
-        _backgroundWorkerProducer.DoWork += BackgroundDoWork;
-        _backgroundWorkerProducer.RunWorkerCompleted += ProducerCompleted;
-        _backgroundWorkerProducer.WorkerReportsProgress = false;
-        _backgroundWorkerProducer.WorkerSupportsCancellation = true;
+        _backgroundWorkerProducer                            =  new BackgroundWorker();
+        _backgroundWorkerProducer.DoWork                     += BackgroundDoWork;
+        _backgroundWorkerProducer.RunWorkerCompleted         += ProducerCompleted;
+        _backgroundWorkerProducer.WorkerReportsProgress      =  false;
+        _backgroundWorkerProducer.WorkerSupportsCancellation =  true;
         _backgroundWorkerProducer.RunWorkerAsync();
     }
 
@@ -83,10 +77,7 @@ public class SampleA_Producer : MqStreamProducer
     /// Calls the method to produce messages.  That method does not return until done.
     /// </summary>
     /// <param name="worker"></param>
-    private void ProduceMessages(BackgroundWorker worker)
-    {
-        _produceMessagesMethod(this, worker);
-    }
+    private void ProduceMessages(BackgroundWorker worker) { _produceMessagesMethod(this, worker); }
 
 
     /// <summary>
@@ -96,9 +87,11 @@ public class SampleA_Producer : MqStreamProducer
     /// <param name="e"></param>
     private void ProducerCompleted(object sender, RunWorkerCompletedEventArgs e)
     {
-        if (e.Cancelled) System.Console.WriteLine("Producer was cancelled");
-        else if (e.Error != null) System.Console.WriteLine("Producer had an error - {0}", e.Error.Message);
-        else System.Console.WriteLine("Producer finished sending messages successfully");
+        if (e.Cancelled)
+            System.Console.WriteLine("Producer was cancelled");
+        else if (e.Error != null)
+            System.Console.WriteLine("Producer had an error - {0}", e.Error.Message);
+        else
+            System.Console.WriteLine("Producer finished sending messages successfully");
     }
-
 }

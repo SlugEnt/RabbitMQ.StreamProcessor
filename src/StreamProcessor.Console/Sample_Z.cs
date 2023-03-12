@@ -173,9 +173,9 @@ namespace StreamProcessor.ConsoleScr
         /// <returns></returns>
         public StreamSystemConfig GetStreamSystemConfig()
         {
-            IPEndPoint a = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
-            IPEndPoint b = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
-            IPEndPoint c = SlugEnt.StreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqc.slug.local", 5552);
+            IPEndPoint a = SlugEnt.MQStreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqa.slug.local", 5552);
+            IPEndPoint b = SlugEnt.MQStreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqb.slug.local", 5552);
+            IPEndPoint c = SlugEnt.MQStreamProcessor.Helpers.GetIPEndPointFromHostName("rabbitmqc.slug.local", 5552);
 
             StreamSystemConfig config = new StreamSystemConfig
             {

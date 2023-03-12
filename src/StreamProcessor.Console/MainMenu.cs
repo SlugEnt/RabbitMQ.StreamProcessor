@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 using StreamProcessor.Console;
 using StreamProcessor.Console.SampleA;
 using StreamProcessor.ConsoleScr.SampleB;

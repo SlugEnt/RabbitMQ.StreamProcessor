@@ -1,4 +1,4 @@
-﻿namespace SlugEnt.StreamProcessor;
+﻿namespace SlugEnt.MQStreamProcessor;
 
 public enum EnumMQStreamType
 {

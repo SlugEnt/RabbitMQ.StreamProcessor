@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
-using SlugEnt.StreamProcessor;
+using SlugEnt.MQStreamProcessor;
 
 namespace Test_StreamProcessorLibrary;
 
