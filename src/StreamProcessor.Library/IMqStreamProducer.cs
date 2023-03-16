@@ -81,8 +81,12 @@ public interface IMqStreamProducer : IMQStreamBase
     /// <para>If you do not plan to manipulate those properties then call the SendMessageAsync method directly, instead of this one.</para>
     /// </summary>
     /// <param name="messageAsString">The actual body of the message</param>
+    /// <param name="contentType">The mime type of the body.</param>
     /// <returns></returns>
-    Message CreateMessage(string messageAsString);
+    Message CreateMessage(string messageAsString, string contentType);
+
+
+    Message CreateMessage<T>(T valueToEncode);
 
 
     /// <summary>

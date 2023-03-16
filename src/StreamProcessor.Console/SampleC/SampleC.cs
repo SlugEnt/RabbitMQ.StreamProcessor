@@ -173,12 +173,15 @@ public class SampleCApp
                 // Publish the messages
                 for (short i = 0; i < MessagesPerBatch; i++)
                 {
-                    string  fullBatchId = _batch + i;
-                    string  msg         = String.Format($"Id: {i} ");
-                    Message message     = _producer.CreateMessage(msg);
+                    string fullBatchId = _batch + i;
+                    string msg         = String.Format($"Id: {i} ");
 
-                    string fullBatch = _batch.ToString() + i.ToString();
-                    message.ApplicationProperties.Add(AP_BATCH, fullBatch);
+                    MessageDataC msgData = new MessageDataC();
+                    msgData.BatchId = fullBatchId;
+                    msgData.Name    = "batch";
+                    Message message = _producer.CreateMessage<MessageDataC>(msgData);
+
+                    message.ApplicationProperties.Add(AP_BATCH, fullBatchId);
                     message.Properties.ReplyTo = "scott";
 
                     _statsList[0].CreatedMessages++;
@@ -265,6 +268,7 @@ public class SampleCApp
     {
         _statsList[1].ConsumedMessages++;
         _statsList[1].ConsumeLastBatchReceived = (string)message.ApplicationProperties[AP_BATCH];
+        string msgText = message.GetText();
         System.Console.WriteLine("Slow Consumed:");
 
         //        _statsList[1].ConsumeLastCheckpoint = _consumerB_slow.CheckpointLastOffset;

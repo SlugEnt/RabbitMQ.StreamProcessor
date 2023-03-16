@@ -131,14 +131,29 @@ public class MqStreamProducer : MQStreamBase, IMqStreamProducer
     ///     </para>
     /// </summary>
     /// <param name="messageAsString">The actual body of the message</param>
+    /// <param name="contentType">The mime type of the body.</param>
     /// <returns></returns>
-    public Message CreateMessage(string messageAsString)
+    public Message CreateMessage(string messageAsString, string contentType = "text/plain")
     {
         Message msg = new(Encoding.UTF8.GetBytes(messageAsString));
-        msg.Properties = new Properties { CreationTime = DateTime.Now };
+        msg.Properties = new Properties { CreationTime = DateTime.Now, ContentType = contentType, };
 
+        // Add Application Source to the Application Properties
         msg.ApplicationProperties = new ApplicationProperties { { "Source", ApplicationName } };
         return msg;
+    }
+
+
+    /// <summary>
+    /// Creates a message with the T object encoded into it.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="valueToEncode"></param>
+    /// <returns></returns>
+    public Message CreateMessage<T>(T valueToEncode)
+    {
+        string json = System.Text.Json.JsonSerializer.Serialize<T>(valueToEncode);
+        return CreateMessage(json, "application/json");
     }
 
 
