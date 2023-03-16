@@ -14,14 +14,14 @@
     <RepositoryUrl>https://github.com/SlugEnt/RabbitMQ.StreamProcessor</RepositoryUrl>
     <PackageReleaseNotes>Consumer, Producer and Engine all core functionality now implemented.</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Company>SlugEnt</Company>
     <PackageProjectUrl>https://github.com/SlugEnt/RabbitMQ.StreamProcessor</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageOutputPath>../../</PackageOutputPath>
-    <AssemblyVersion>0.5.0.0</AssemblyVersion>
-    <FileVersion>0.5.0.0</FileVersion>
+    <AssemblyVersion>0.6.0.0</AssemblyVersion>
+    <FileVersion>0.6.0.0</FileVersion>
     <PackageTags>rabbit;mq;stream;</PackageTags>
   </PropertyGroup>
 
