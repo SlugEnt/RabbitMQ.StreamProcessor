@@ -251,4 +251,43 @@ public class Test_MQStreamProducer
         Assert.IsFalse(result, "C100 - Should have returned Circuit Breaker Status");
         Assert.IsFalse(producerTst.CircuitBreakerTripped, "C110: Circuit Breaker should not be tripped");
     }
+
+
+    // Create Message
+    [Test]
+    public void CreateMessageNoContentType()
+    {
+        // A. Initialize
+
+        // We initially turn off Auto-Retries.  We will turn it on after initial set of messages
+        MqTesterProducer producerTst = Helpers.SetupProducer();
+
+        string msgText = "some text";
+
+        Message message = producerTst.CreateMessage(msgText);
+
+        // C. Validate
+        Assert.AreEqual("text/plain", message.Properties.ContentType, "A10:");
+        Assert.AreEqual(msgText, message.GetText(), "A20:");
+    }
+
+
+
+    // Create Message with content type
+    [Test]
+    public void CreateMessageWithContentType()
+    {
+        // A. Initialize
+
+        // We initially turn off Auto-Retries.  We will turn it on after initial set of messages
+        MqTesterProducer producerTst = Helpers.SetupProducer();
+
+        string  msgText     = "some text";
+        string  contentType = "text/csv";
+        Message message     = producerTst.CreateMessage(msgText, contentType);
+
+        // C. Validate
+        Assert.AreEqual(contentType, message.Properties.ContentType, "A10:");
+        Assert.AreEqual(msgText, message.GetText(), "A20:");
+    }
 }

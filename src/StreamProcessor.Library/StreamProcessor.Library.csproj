@@ -12,7 +12,8 @@
     <Copyright>2023 Scott Herrmann</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/SlugEnt/RabbitMQ.StreamProcessor</RepositoryUrl>
-    <PackageReleaseNotes>Consumer, Producer and Engine all core functionality now implemented.</PackageReleaseNotes>
+    <PackageReleaseNotes>Consumer, Producer and Engine all core functionality now implemented.
+Added Message Extensions to more easily store objects into message body</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Version>0.6.0</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
