@@ -92,11 +92,31 @@ public static class ExtensionMessage
 
 
     /// <summary>
-    /// Sets an expiration date on the message.  This is only for receivers to know when this message is no longer valid
+    /// Prints information about the message.  So key properties and ApplicationProperties
     /// </summary>
-    /// <param name="message"></param>
-    public static void SetExpiration(this Message message)
+    /// <returns></returns>
+    public static string PrintMessageInfo(this Message message)
     {
-        //message.Properties.
+        StringBuilder sb = new StringBuilder();
+
+
+        if (message.Properties.Subject != string.Empty)
+            sb.Append($"\nProp: Subject: {message.Properties.Subject}");
+
+        if (message.Properties.CreationTime != null)
+            sb.Append($"\nProp: CreationTime: {message.Properties.CreationTime}");
+
+        if (message.Properties.CorrelationId != null)
+            sb.Append($"\nProp: CorrelationId: {message.Properties.CorrelationId.ToString()}");
+
+        if (message.Properties.ContentType != String.Empty)
+            sb.Append($"\nProp: ContentType: {message.Properties.ContentType}");
+
+        foreach (KeyValuePair<string, object> appProperty in message.ApplicationProperties)
+        {
+            sb.Append($"\nAppProp:  {appProperty.Key} --> {appProperty.Value.ToString()}");
+        }
+
+        return sb.ToString();
     }
 }

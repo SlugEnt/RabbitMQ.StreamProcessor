@@ -186,5 +186,45 @@ namespace Test_StreamProcessorLibrary
             Assert.AreEqual(answerMsg.Id, id, "A10:");
             Assert.AreEqual(answerMsg.Amount, amount, "A10:");
         }
+
+
+        [Test]
+        public void PrintMessageInfo()
+        {
+            // A. Setup
+            string streamA = "sA";
+            string appA    = "A1";
+
+            IMQStreamEngine   mqStreamEngine = GetTestingStreamEngine();
+            IMqStreamProducer producerA      = mqStreamEngine.GetProducer(streamA, appA);
+
+
+            // B. Test
+            var testMsgs = new Faker<TestMsg>()
+                           .RuleFor(o => o.Name, f => f.Random.AlphaNumeric(5000))
+                           .RuleFor(o => o.Id, f => f.Random.Long(0, 9000000))
+                           .RuleFor(o => o.Amount, f => f.Random.Double(0, 9000000));
+
+
+            TestMsg testMsg = testMsgs.Generate();
+
+            string msgText      = "Hello World";
+            string propertyName = "someKey";
+            string subject      = "thisIsSubkject";
+            Guid   guid         = Guid.NewGuid();
+
+            Message message = producerA.CreateMessage(msgText);
+            message.AddApplicationProperty(propertyName, testMsg);
+            message.Properties.Subject       = subject;
+            message.Properties.CorrelationId = guid;
+            message.AddApplicationProperty("NumberOfInstances", 560564);
+
+            // C. Validate
+            string info = message.PrintMessageInfo();
+
+            StringAssert.Contains(subject, info, "A10:");
+            StringAssert.Contains(propertyName, info, "A20:");
+            StringAssert.Contains(guid.ToString(), info, "A30:");
+        }
     }
 }
