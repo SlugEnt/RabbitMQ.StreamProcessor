@@ -1,10 +1,16 @@
 # RabbitMQ.StreamProcessor
 
-![Build Test Event](https://github.com/slugent/RabbitMQ.StreamProcessor/actions/workflows/buildtest.yml/badge.svg?event=push)
-
 High Level library for interacting with RabbitMQ streams using the base library --> [rabbitmq-stream-dotnet-client](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client)
 
 This library provides a higher level interface for working with RabbitMQ Streams that makes its use in applications quick and very easy.
+
+# Disclaimer
+At this time I have switched to Redis Streams due to the inability of the Rabbit MQ Streams to:
+* Support multiple clients using the same application ID, Ie, scale up by adding more of the same app.  Rabbit MQ Streams can handle this, BUT only 1 of those instances is actually active.  Meaning you cannot get parallelization across the apps.
+* The recommendation is to not set the Offset after each message is received.  But that is the easiest and really only way to confirm you have received and processed a message.
+
+That said, this library is in a working state and does what its supposed to do.  The best sample is to look at the SampleC class in the StreamProcessor.ConsoleScr project.
+
 
 # Features
 It supports a number of features out of the box including:
