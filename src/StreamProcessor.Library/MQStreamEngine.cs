@@ -65,7 +65,7 @@ namespace SlugEnt.MQStreamProcessor
         /// <param name="consumptionHandler">The name of the method that should be called to process a message whenever a message arrives.</param>
         /// <returns></returns>
         /// <exception cref="ApplicationException"></exception>
-        public IMqStreamConsumer GetConsumer(string streamName, string applicationName, Func<Message, Task<bool>> consumptionHandler)
+        public IMqStreamConsumer GetConsumer(string streamName, string applicationName, Func<Message, Task> consumptionHandler)
         {
             if (StreamSystemConfig == null)
                 throw new ApplicationException("The StreamSystemConfig must be set before calling GetConsumer");

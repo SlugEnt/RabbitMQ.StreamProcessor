@@ -25,7 +25,7 @@ namespace Test_StreamProcessorLibrary
 
         public ulong CheckpointLastOffset { get; private set; } = 0;
 
-        public ulong MessagesConsumed => MessageCounter;
+        public ulong Stat_MessagesConsumedCount => MessageCounter;
 
         public int CheckpointOffsetCounter { get; protected set; } = 0;
 
@@ -61,7 +61,6 @@ namespace Test_StreamProcessorLibrary
         public Task ConsumeAsync()
         {
             // Do nothing.
-            //throw new NotImplementedException();
             return Task.CompletedTask;
         }
 
@@ -77,7 +76,7 @@ namespace Test_StreamProcessorLibrary
         }
 
 
-        public void SetConsumptionHandler(Func<Message, Task<bool>> callHandler)
+        public void SetConsumptionHandler(Func<Message, Task> callHandler)
         {
             // We use an internal Consumption handler!
         }

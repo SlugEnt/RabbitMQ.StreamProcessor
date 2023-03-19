@@ -18,7 +18,7 @@ public interface IMqStreamConsumer : IMQStreamBase
     /// <summary>
     /// The total number of messages consumed.
     /// </summary>
-    ulong MessagesConsumed { get; }
+    ulong Stat_MessagesConsumedCount { get; }
 
     /// <summary>
     /// How many messages have been consumed since last Checkpoint
@@ -64,7 +64,7 @@ public interface IMqStreamConsumer : IMQStreamBase
     /// Sets the Method to be called when a message is received.
     /// </summary>
     /// <param name="callHandler"></param>
-    void SetConsumptionHandler(Func<Message, Task<bool>> callHandler);
+    void SetConsumptionHandler(Func<Message, Task> callHandler);
 
 
     /// <summary>

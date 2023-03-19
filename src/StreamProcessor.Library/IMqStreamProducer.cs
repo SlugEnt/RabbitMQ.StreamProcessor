@@ -34,7 +34,14 @@ public interface IMqStreamProducer : IMQStreamBase
     /// </summary>
     ulong SendCount { get; }
 
+    /// <summary>
+    /// Number of Messages Successfully Confirmed
+    /// </summary>
     ulong Stat_MessagesSuccessfullyConfirmed { get; }
+
+    /// <summary>
+    /// Number of Messages errored
+    /// </summary>
     ulong Stat_MessagesErrored { get; }
 
     /// <summary>

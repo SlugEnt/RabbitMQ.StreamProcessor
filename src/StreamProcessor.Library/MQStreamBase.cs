@@ -125,7 +125,7 @@ public abstract class MQStreamBase
 
 
             // See if we need Stream Specs.  If it already exists on server we do not.
-            bool streamExists = await RabbitMQ_StreamExists(_mqStreamName);
+            bool streamExists = await RabbitMQ_StreamExistsAsync(_mqStreamName);
             if (!streamExists)
             {
                 if (MqStreamType == EnumMQStreamType.Consumer)
@@ -158,7 +158,27 @@ public abstract class MQStreamBase
     ///     Permanently deletes the Stream off the RabbitMQ Servers.
     /// </summary>
     /// <returns></returns>
-    public async Task DeleteStreamFromRabbitMQ() { await _streamSystem.DeleteStream(_mqStreamName); }
+    public async Task DeleteStreamFromRabbitMQ()
+    {
+        try
+        {
+            // Create the stream if it does not exist.
+            if (_streamSystem == null)
+                _streamSystem = await StreamSystem.Create(_config, StreamLogger);
+
+
+            if (!await RabbitMQ_StreamExistsAsync(_mqStreamName))
+                return;
+
+
+            // Delete
+            await _streamSystem.DeleteStream(_mqStreamName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Error attempting to delete stream {_mqStreamName}.  {e.Message}", e);
+        }
+    }
 
 
 
@@ -196,7 +216,7 @@ public abstract class MQStreamBase
     /// </summary>
     /// <param name="streamName"></param>
     /// <returns></returns>
-    protected virtual async Task<bool> RabbitMQ_StreamExists(string streamName) => await _streamSystem.StreamExists(_mqStreamName);
+    protected virtual async Task<bool> RabbitMQ_StreamExistsAsync(string streamName) => await _streamSystem.StreamExists(_mqStreamName);
 
 
     /// <summary>

@@ -14,8 +14,8 @@ public class MqStreamConsumer : MQStreamBase, IMqStreamConsumer
     private readonly string _consumerApplicationName;
 
     //private Func<string, RawConsumer, MessageContext, Message, Task> _callHandler;
-    private Func<Message, Task<bool>> _callHandler;
-    private IConsumer                 _rawConsumer;
+    private Func<Message, Task> _callHandler;
+    private IConsumer           _rawConsumer;
 
 
 
@@ -161,7 +161,7 @@ public class MqStreamConsumer : MQStreamBase, IMqStreamConsumer
     /// <summary>
     ///     The total number of messages consumed.
     /// </summary>
-    public ulong MessagesConsumed => MessageCounter;
+    public ulong Stat_MessagesConsumedCount => MessageCounter;
 
 
 
@@ -169,7 +169,7 @@ public class MqStreamConsumer : MQStreamBase, IMqStreamConsumer
     ///     Sets the Method to be called when a message is received.
     /// </summary>
     /// <param name="callHandler"></param>
-    public void SetConsumptionHandler(Func<Message, Task<bool>> callHandler) { _callHandler = callHandler; }
+    public void SetConsumptionHandler(Func<Message, Task> callHandler) { _callHandler = callHandler; }
 
 
     /// <summary>
@@ -204,17 +204,14 @@ public class MqStreamConsumer : MQStreamBase, IMqStreamConsumer
     /// <returns></returns>
     protected virtual async Task ProcessMessageAsync(MessageContext msgContext, Message message)
     {
-        bool success = await _callHandler(message);
-        if (success)
-        {
-            MessageCounter++;
-            CheckpointOffsetCounter++;
-            LastOffset = msgContext.Offset;
+        await _callHandler(message);
+        MessageCounter++;
+        CheckpointOffsetCounter++;
+        LastOffset = msgContext.Offset;
 
 
-            if (CheckpointOffsetCounter >= CheckpointOffsetLimit)
-                CheckPointSetAsync();
-        }
+        if (CheckpointOffsetCounter >= CheckpointOffsetLimit)
+            CheckPointSetAsync();
 
         await Task.CompletedTask;
     }

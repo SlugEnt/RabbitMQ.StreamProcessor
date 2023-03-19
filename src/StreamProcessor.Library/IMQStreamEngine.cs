@@ -43,7 +43,7 @@ public interface IMQStreamEngine
     /// <param name="consumptionHandler">The name of the method that should be called to process a message whenever a message arrives.</param>
     /// <returns></returns>
     /// <exception cref="ApplicationException"></exception>
-    IMqStreamConsumer GetConsumer(string streamName, string applicationName, Func<Message, Task<bool>> consumptionHandler);
+    IMqStreamConsumer GetConsumer(string streamName, string applicationName, Func<Message, Task> consumptionHandler);
 
 
     Task StartAllConsumersAsync();

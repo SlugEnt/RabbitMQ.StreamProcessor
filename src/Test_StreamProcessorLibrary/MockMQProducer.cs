@@ -39,7 +39,7 @@ public class MockMQProducer : MqStreamProducer, IMqStreamProducer
     /// </summary>
     /// <param name="streamName"></param>
     /// <returns></returns>
-    protected override async Task<bool> RabbitMQ_StreamExists(string streamName) { return _streamExists; }
+    protected override async Task<bool> RabbitMQ_StreamExistsAsync(string streamName) { return _streamExists; }
 
 
     /// <summary>
